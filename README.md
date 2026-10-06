@@ -45,6 +45,7 @@ Variables (`.env`, gitignored):
 - **Generar propuestas** (bandeja y móvil, con campo "tema de la semana") → `src/lib/ai.ts` llama al webhook n8n → Claude redacta N piezas en la voz TEM (JSON) → se insertan en `tem_proposals` y aparecen en la bandeja.
 - **Copiloto** (chat del lado izquierdo al abrir una pieza): cada mensaje o chip va al webhook `TEM Redes — Ajustar pieza con Claude (webhook)` (id `hMl6qfVAN5QaSwRC`) → Claude devuelve la pieza ajustada + una respuesta corta → se actualiza el card en vivo y se persiste.
 - **Caption editable**: lo que escribes en el textarea se guarda solo (debounce 600 ms).
+- **Descargar imagen** (copiloto y sheet móvil): `src/lib/exportCard.ts` rasteriza la pieza con `html-to-image` a PNG **1080×1920** (Reels/TikTok/Shorts) o **1920×1080** como miniatura si es video de YouTube. Solo incrusta Montserrat (base64 desde los TTF locales) — si se deja que escanee todas las fuentes del documento se cuelga.
 
 > Nota técnica: la app envía los webhooks como `text/plain` para evitar el preflight CORS; n8n entrega entonces el body como **string**, así que los nodos Code hacen `JSON.parse` si hace falta. Si agregas un webhook nuevo, repite ese patrón.
 
@@ -109,7 +110,7 @@ texto de cuerpo; sobre claro `#111`, sobre oscuro `#FFF`.
 - OAuth por red (Instagram Graph, TikTok Display, YouTube Data, LinkedIn Marketing) + métricas reales.
 - Editor manual de piezas + programación/publicación real.
 - Persistir el historial del chat del copiloto y el envío de newsletter.
-- Exportar el card 9:16 como imagen/video real para publicar.
+- Exportar video (hoy solo imagen PNG).
 
 ## Origen del diseño
 
