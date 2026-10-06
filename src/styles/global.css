@@ -1,0 +1,135 @@
+@import "./tokens.css";
+
+/* --- Reset ligero ---------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  font-family: var(--font-ui);
+  background: var(--tem-bg);
+  color: var(--tem-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+button {
+  font-family: inherit;
+}
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* --- Press spring: requisito del cliente para TODOS los botones ------------ */
+.press {
+  transition: transform 0.16s var(--ease-spring), opacity 0.16s ease;
+  cursor: pointer;
+}
+.press:hover {
+  opacity: 0.9;
+}
+.press:active {
+  transform: scale(0.97);
+}
+.press-sm:active {
+  transform: scale(0.9);
+}
+.press:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* --- Focus visible: outline naranja, sin glow ----------------------------- */
+:focus-visible {
+  outline: 2px solid var(--tem-orange);
+  outline-offset: 4px;
+}
+
+/* --- Textarea de caption: focus naranja + fondo blanco -------------------- */
+.tem-textarea:focus {
+  border-color: var(--tem-orange) !important;
+  background: var(--tem-surface) !important;
+}
+
+/* --- Botón secundario que invierte a negro en hover ----------------------- */
+.invert-hover:hover {
+  background: var(--tem-ink) !important;
+  color: #fff !important;
+  opacity: 1 !important;
+}
+
+/* --- Accesos rápidos de métricas ------------------------------------------ */
+.preset {
+  transition: color 0.16s ease;
+}
+.preset:hover {
+  color: var(--tem-ink) !important;
+}
+
+/* --- Números tabulares para métricas (se alinean en columna) -------------- */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* --- Eyebrow reutilizable -------------------------------------------------- */
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--tem-orange);
+}
+
+/* --- Scrollbars discretos -------------------------------------------------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d8d8d8 transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #d8d8d8;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* --- Animaciones ----------------------------------------------------------- */
+@keyframes sheetUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes toastInOut {
+  0% {
+    transform: translate(-50%, 14px);
+    opacity: 0;
+  }
+  14% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+  86% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, 14px);
+    opacity: 0;
+  }
+}

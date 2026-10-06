@@ -1,0 +1,63 @@
+/* =========================================================================
+   TEM Design System — tokens
+   Fuente única de verdad para color, tipografía, espaciado, radios, sombras
+   y movimiento. Ver design handoff "Plataforma TEM — Gestión de redes".
+   ========================================================================= */
+
+/* --- Fuentes de marca (solo para los cards 9:16) --------------------------- */
+@font-face {
+  font-family: "Montserrat";
+  src: url("../assets/fonts/Montserrat-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Montserrat";
+  src: url("../assets/fonts/Montserrat-ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Montserrat";
+  src: url("../assets/fonts/Montserrat-Black.ttf") format("truetype");
+  font-weight: 900;
+  font-display: swap;
+}
+
+:root {
+  /* --- Color -------------------------------------------------------------- */
+  --tem-bg: #efefef;        /* canvas / fondo de la app — nunca blanco puro */
+  --tem-surface: #ffffff;   /* tarjetas, paneles, sidebar */
+  --tem-ink: #111111;       /* texto principal sobre claro; fondo de piezas */
+  --tem-orange: #f47c3c;    /* acento único */
+  --tem-navy: #1d3557;      /* variante de card "solución" */
+  --tem-red: #ff3b30;       /* pérdidas, solo sobre oscuro */
+  --tem-handle: #9a9a9a;    /* el único gris del sistema (metadatos/handle) */
+  --tem-hairline: #efefef;  /* divisores 1px */
+  --tem-border-muted: #e4e4e4;
+  --tem-border-empty: #e0e0e0;
+
+  /* --- Tipografía --------------------------------------------------------- */
+  /* UI del panel: Inter (optimizada para pantallas y datos, muy legible).
+     Fallback a la fuente de sistema si Inter no carga. */
+  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Helvetica Neue", Arial, sans-serif;
+  /* Contenido de marca (cards 9:16): Montserrat, estilo afiche. */
+  --font-brand: "Montserrat", var(--font-ui);
+
+  /* --- Radios ------------------------------------------------------------- */
+  --r-card916: 28px;
+  --r-content: 18px;
+  --r-btn: 12px;
+  --r-chip: 10px;
+  --r-pill: 999px;
+
+  /* --- Sombras (sin borde; la sombra hace el trabajo) --------------------- */
+  --sh-card: 0 1px 2px rgba(17, 17, 17, 0.04), 0 8px 24px rgba(17, 17, 17, 0.07);
+  --sh-elev: 0 1px 2px rgba(17, 17, 17, 0.06), 0 8px 24px rgba(17, 17, 17, 0.12),
+    0 32px 64px rgba(17, 17, 17, 0.14);
+  --sh-popover: 0 8px 24px rgba(17, 17, 17, 0.12), 0 32px 64px rgba(17, 17, 17, 0.16);
+
+  /* --- Movimiento --------------------------------------------------------- */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
