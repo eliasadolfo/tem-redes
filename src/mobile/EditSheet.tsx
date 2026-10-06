@@ -3,6 +3,7 @@ import { useStore } from "../store";
 import { VARIANTS, HANDLE } from "../data/mock";
 import { platformsStr } from "../lib/platforms";
 import Card916 from "../components/Card916";
+import { downloadPiecePng } from "../lib/exportCard";
 
 /** Sheet "Editar y publicar" — cubre la pantalla del teléfono. */
 export default function EditSheet() {
@@ -106,6 +107,25 @@ export default function EditSheet() {
           </div>
           <div style={{ marginTop: 8, fontSize: 11, color: "var(--tem-handle)" }}>{platformsStr(work.platforms)}</div>
         </div>
+      </div>
+
+      {/* descargar imagen lista para publicar */}
+      <div style={{ padding: "0 18px" }}>
+        <button
+          className="press-sm"
+          onClick={() =>
+            downloadPiecePng(work, cur)
+              .then((r) => actions.flash(`Imagen lista · ${r.width}×${r.height}`))
+              .catch(() => actions.flash("No pude generar la imagen"))
+          }
+          style={{
+            all: "unset", cursor: "pointer", boxSizing: "border-box", width: "100%", textAlign: "center",
+            fontSize: 14, fontWeight: 600, color: "var(--tem-ink)", border: "1.5px solid var(--tem-ink)",
+            padding: 12, borderRadius: 12,
+          }}
+        >
+          {work.format === "video" ? "Descargar miniatura" : "Descargar imagen"}
+        </button>
       </div>
 
       {/* barra inferior fija */}

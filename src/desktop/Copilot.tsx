@@ -4,6 +4,7 @@ import { VARIANTS, HANDLE } from "../data/mock";
 import { DAY_NAMES_FULL } from "../lib/dates";
 import { platformsStr } from "../lib/platforms";
 import Card916 from "../components/Card916";
+import { downloadPiecePng } from "../lib/exportCard";
 
 const WORK_CHIPS = ["Hazlo más corto", "Cambia el gancho", "Tono más directo"];
 
@@ -285,6 +286,20 @@ export default function Copilot() {
         </div>
 
         <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 9 }}>
+          <button
+            className="press invert-hover"
+            onClick={() =>
+              downloadPiecePng(work, cur)
+                .then((r) => actions.flash(`Imagen lista · ${r.width}×${r.height}`))
+                .catch(() => actions.flash("No pude generar la imagen"))
+            }
+            style={{
+              all: "unset", cursor: "pointer", textAlign: "center", fontSize: 13, fontWeight: 600,
+              color: "var(--tem-ink)", border: "1.5px solid var(--tem-ink)", padding: 11, borderRadius: 12,
+            }}
+          >
+            {isVideo ? "Descargar miniatura" : "Descargar imagen"}
+          </button>
           <button
             className="press"
             onClick={actions.publishNow}
