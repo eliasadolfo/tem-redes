@@ -48,7 +48,21 @@ Variables (`.env`, gitignored):
 
 > Nota técnica: la app envía los webhooks como `text/plain` para evitar el preflight CORS; n8n entrega entonces el body como **string**, así que los nodos Code hacen `JSON.parse` si hace falta. Si agregas un webhook nuevo, repite ese patrón.
 
-> ⚠️ Seguridad: RLS está abierta a `anon` porque es un MVP de un solo usuario. **Antes de publicar la app hay que añadir Supabase Auth** y cerrar esas políticas.
+## Acceso y seguridad
+
+- **Login** con Supabase Auth (email + contraseña). Un solo usuario: Elías. La contraseña se cambia en **Perfil → Cambiar contraseña**.
+- **RLS cerrada**: las tablas `tem_*` solo las lee/escribe el usuario autenticado cuyo correo es el de Elías (políticas `*_owner`).
+- **Webhooks n8n protegidos**: la app envía el token de sesión en el body; el nodo "Armar prompt" lo verifica contra `/auth/v1/user` de Supabase y rechaza cualquier otra persona (evita que terceros gasten la API de Claude).
+
+## Deploy (GitHub Pages)
+
+```bash
+npm run deploy   # build de producción + push a la rama gh-pages
+```
+
+- Repo: `eliasadolfo/tem-redes` · URL pública: **https://eliasadolfo.github.io/tem-redes/**
+- `vite.config.ts` usa `base: '/tem-redes/'` solo en producción.
+- Las variables `VITE_*` se inyectan en el build desde tu `.env` local (la llave de Supabase es *publishable*; la seguridad real está en RLS + Auth).
 
 El layout es **responsive**: escritorio (sidebar + 7 vistas) por defecto y
 **app móvil** (tab bar + sheet) bajo 720px de ancho.
