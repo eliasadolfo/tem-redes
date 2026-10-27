@@ -15,7 +15,14 @@ export default function Login() {
     setBusy(true);
     setError(null);
     const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    if (err) setError("Correo o contraseña incorrectos.");
+    // H09 — qué pasó y cómo seguir, sin códigos
+    if (err) {
+      setError(
+        /network|fetch/i.test(err.message)
+          ? "No hay conexión. Revisa tu internet y vuelve a intentar."
+          : "Esa contraseña no coincide con este correo. Revísala e inténtalo de nuevo.",
+      );
+    }
     setBusy(false);
   };
 

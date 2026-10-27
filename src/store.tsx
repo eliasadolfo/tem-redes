@@ -29,6 +29,7 @@ import {
   updateProposalStatus,
 } from "./lib/db";
 import { adjustPiece, generateProposals, type GenerateOptions } from "./lib/ai";
+import { PLATFORM_LABEL } from "./lib/platforms";
 
 /* -------------------------------------------------------------------------- */
 /*  Estado                                                                     */
@@ -64,6 +65,10 @@ interface State {
   libFilter: string;
   // feedback
   toast: string | null;
+  /** Acción reversible asociada al toast actual (H03: deshacer). */
+  undo: (() => void) | null;
+  /** Carga inicial desde Supabase en curso (H01: visibilidad del estado). */
+  loading: boolean;
   // IA
   generating: boolean;
   chatBusy: boolean; // el copiloto está aplicando un ajuste
@@ -92,6 +97,8 @@ const initialState: State = {
   picking: "start",
   libFilter: "Todas",
   toast: null,
+  undo: null,
+  loading: true,
   generating: false,
   chatBusy: false,
 };
@@ -134,6 +141,10 @@ interface Actions {
   // IA
   generate: (opts?: GenerateOptions) => Promise<void>;
   updateCaption: (id: string, caption: string) => void;
+  /** Cambia día (0-4) y/o hora ("HH:MM" o "") de una pieza. */
+  updateSchedule: (id: string, s: { day?: number; time?: string }) => void;
+  /** Revierte la última acción (si el toast con "Deshacer" sigue visible). */
+  undoLast: () => void;
 }
 
 type Store = State & { actions: Actions };
@@ -152,16 +163,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setS((prev) => ({ ...prev, ...(typeof p === "function" ? p(prev) : p) }));
   }, []);
 
-  const flash = useCallback(
-    (text: string) => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-      setS((prev) => ({ ...prev, toast: text }));
-      toastTimer.current = setTimeout(() => {
-        setS((prev) => ({ ...prev, toast: null }));
-      }, 2400);
-    },
-    [],
-  );
+  // Toast: 2.4 s para avisos simples; 6 s cuando ofrece "Deshacer".
+  const flash = useCallback((text: string, undo: (() => void) | null = null) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setS((prev) => ({ ...prev, toast: text, undo }));
+    toastTimer.current = setTimeout(
+      () => setS((prev) => ({ ...prev, toast: null, undo: null })),
+      undo ? 6000 : 2400,
+    );
+  }, []);
 
   const actions = useMemo<Actions>(() => {
     const openWork = (id: string) =>
@@ -206,12 +216,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           } catch (e) {
             console.error("sendChat:", e);
             patch((prev) => ({
-              chat: [...prev.chat, { role: "ai", text: "No pude aplicar el ajuste. Intenta de nuevo." }],
+              chat: [...prev.chat, { role: "ai", text: "No pude aplicar ese ajuste. Vuelve a intentarlo o pídemelo de otra forma." }],
             }));
           } finally {
             patch({ chatBusy: false });
           }
         })();
+      },
+      updateSchedule: (id, sch) => {
+        patch((prev) => ({
+          proposals: prev.proposals.map((p) => (p.id === id ? { ...p, ...sch } : p)),
+        }));
+        void updateProposalFields(id, sch);
       },
       // Caption editado a mano (se guarda)
       updateCaption: (id, caption) => {
@@ -220,25 +236,45 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }));
         void updateProposalFields(id, { caption });
       },
+      // H03 — toda acción de estado se puede deshacer desde el toast.
       approve: (id) => {
+        const before = sRef.current.proposals.find((p) => p.id === id)?.status ?? "proposal";
         patch((prev) => ({
           proposals: prev.proposals.map((p) =>
             p.id === id ? { ...p, status: "scheduled" } : p,
           ),
           work: null,
         }));
-        flash("Aprobado y programado");
         void updateProposalStatus(id, "scheduled");
+        flash("Aprobada y programada", () => {
+          patch((prev) => ({
+            proposals: prev.proposals.map((p) => (p.id === id ? { ...p, status: before } : p)),
+          }));
+          void updateProposalStatus(id, before);
+        });
       },
       reject: (id) => {
+        const before = sRef.current.proposals.find((p) => p.id === id)?.status ?? "proposal";
         patch((prev) => ({
           proposals: prev.proposals.map((p) =>
             p.id === id ? { ...p, status: "rejected" } : p,
           ),
           work: null,
         }));
-        flash("Propuesta descartada");
         void updateProposalStatus(id, "rejected");
+        flash("Propuesta descartada", () => {
+          patch((prev) => ({
+            proposals: prev.proposals.map((p) => (p.id === id ? { ...p, status: before } : p)),
+          }));
+          void updateProposalStatus(id, before);
+        });
+      },
+      undoLast: () => {
+        const u = sRef.current.undo;
+        if (!u) return;
+        if (toastTimer.current) clearTimeout(toastTimer.current);
+        u();
+        flash("Listo, lo deshice");
       },
       publishNow: () => {
         const prev = sRef.current;
@@ -249,15 +285,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           flash("Elige al menos una red");
           return;
         }
-        const nice = active.map((t) => (t === "in" ? "LinkedIn" : t)).join(", ");
+        const nice = active.map((t) => PLATFORM_LABEL[t]).join(", ");
+        const before = w.status;
         patch((p) => ({
           proposals: p.proposals.map((x) =>
             x.id === w.id ? { ...x, status: "scheduled" } : x,
           ),
           work: null,
         }));
-        flash("Publicado en " + nice);
         void updateProposalStatus(w.id, "scheduled");
+        flash("Programada para " + nice, () => {
+          patch((prev) => ({
+            proposals: prev.proposals.map((p) => (p.id === w.id ? { ...p, status: before } : p)),
+          }));
+          void updateProposalStatus(w.id, before);
+        });
       },
       flash,
       // calendario
@@ -341,10 +383,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const nuevas = await generateProposals({ count: 5, ...opts, existentes });
           await insertProposals(nuevas);
           patch((prev) => ({ proposals: [...prev.proposals, ...nuevas], view: "inbox" }));
-          flash(`${nuevas.length} propuestas nuevas listas`);
+          flash(`${nuevas.length} propuestas nuevas en la bandeja`);
         } catch (e) {
           console.error("generate:", e);
-          flash("No pude generar propuestas. Intenta de nuevo.");
+          // H09: qué pasó + cómo seguir, sin códigos técnicos
+          flash("El asistente no respondió. Revisa tu conexión y vuelve a intentar.");
         } finally {
           patch({ generating: false });
         }
@@ -359,10 +402,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     (async () => {
       const [props, conns] = await Promise.all([fetchProposals(), fetchConnections()]);
       if (!alive) return;
-      const upd: Partial<State> = {};
+      const upd: Partial<State> = { loading: false };
       if (props) upd.proposals = props;
       if (conns) upd.connections = conns;
-      if (Object.keys(upd).length > 0) patch(upd);
+      patch(upd);
     })();
     return () => {
       alive = false;

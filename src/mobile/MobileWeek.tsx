@@ -1,5 +1,6 @@
 import { useStore } from "../store";
 import { DAY, DAY_NAMES_FULL, noon, weekRangeLabel } from "../lib/dates";
+import { platformsStr } from "../lib/platforms";
 import type { Proposal } from "../types";
 
 export default function MobileWeek() {
@@ -40,7 +41,7 @@ export default function MobileWeek() {
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                 {items.length === 0 ? (
                   <div style={{ border: "1.5px dashed var(--tem-border-empty)", borderRadius: 16, padding: 14, fontWeight: 500, fontSize: 12, color: "#B8B8B8" }}>
-                    Sin publicaciones
+                    Día libre · genera propuestas desde Inicio
                   </div>
                 ) : (
                   items.map((p) => <WeekCard key={p.id} p={p} onOpen={() => actions.openWork(p.id)} />)
@@ -56,7 +57,7 @@ export default function MobileWeek() {
 
 function WeekCard({ p, onOpen }: { p: Proposal; onOpen: () => void }) {
   const title = p.line.pre + p.line.key + p.line.post;
-  const platStr = p.platforms.join(" · ");
+  const platStr = platformsStr(p.platforms);
 
   if (p.status === "scheduled") {
     return (

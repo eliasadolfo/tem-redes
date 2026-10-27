@@ -7,6 +7,7 @@ import {
   weekRangeLabel,
 } from "../lib/dates";
 import CalendarPopover from "../components/CalendarPopover";
+import { platformsStr } from "../lib/platforms";
 import type { PlatformTag, Proposal } from "../types";
 
 const TODAY = new Date(2026, 6, 23, 12).getTime();
@@ -107,7 +108,9 @@ export default function Calendar() {
               <div style={{ fontSize: 12, fontWeight: 600, color: "var(--tem-handle)", padding: "0 2px" }}>
                 {wk} {d.getDate()}
               </div>
-              {items.length === 0 ? (
+              {s.loading ? (
+                <div className="skeleton" style={{ height: 96 }} aria-busy="true" />
+              ) : items.length === 0 ? (
                 <EmptySlot />
               ) : (
                 items.map((p) => <PieceCard key={p.id} p={p} onOpen={() => actions.openWork(p.id)} />)
@@ -131,22 +134,24 @@ function Triangle({ dir }: { dir: "left" | "right" }) {
   );
 }
 
+/** H10 — el hueco explica cómo llenarse. */
 function EmptySlot() {
   return (
     <div
       style={{
         border: "1.5px dashed var(--tem-border-empty)", borderRadius: 16, padding: "14px 15px",
-        fontSize: 12, fontWeight: 500, color: "#B8B8B8", minHeight: 64, display: "grid", placeItems: "center",
+        fontSize: 12, fontWeight: 500, color: "#9A9A9A", minHeight: 64, display: "grid", placeItems: "center",
+        textAlign: "center", lineHeight: 1.4,
       }}
     >
-      Sin publicaciones
+      Día libre · genera propuestas o mueve una pieza aquí
     </div>
   );
 }
 
 function PieceCard({ p, onOpen }: { p: Proposal; onOpen: () => void }) {
   const scheduled = p.status === "scheduled";
-  const platStr = p.platforms.join(" · ");
+  const platStr = platformsStr(p.platforms);
   const title = p.line.pre + p.line.key + p.line.post;
 
   if (scheduled) {
@@ -154,6 +159,7 @@ function PieceCard({ p, onOpen }: { p: Proposal; onOpen: () => void }) {
       <button
         className="press"
         onClick={onOpen}
+        title={`Programada · ${platStr}${p.time ? " · " + p.time : ""}. Clic para editar.`}
         style={{
           all: "unset", cursor: "pointer", boxSizing: "border-box",
           background: "var(--tem-ink)", borderRadius: 16, padding: "14px 15px", display: "block",
@@ -174,6 +180,7 @@ function PieceCard({ p, onOpen }: { p: Proposal; onOpen: () => void }) {
     <button
       className="press"
       onClick={onOpen}
+      title={`Propuesta del asistente · ${platStr}. Clic para revisar y aprobar.`}
       style={{
         all: "unset", cursor: "pointer", boxSizing: "border-box",
         background: "var(--tem-surface)", border: "1.5px dashed var(--tem-orange)",

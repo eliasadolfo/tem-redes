@@ -55,6 +55,29 @@ Variables (`.env`, gitignored):
 - **RLS cerrada**: las tablas `tem_*` solo las lee/escribe el usuario autenticado cuyo correo es el de Elías (políticas `*_owner`).
 - **Webhooks n8n protegidos**: la app envía el token de sesión en el body; el nodo "Armar prompt" lo verifica contra `/auth/v1/user` de Supabase y rechaza cualquier otra persona (evita que terceros gasten la API de Claude).
 
+## UX — criterios aplicados (heurísticas de Nielsen, oct-2026)
+
+Auditoría con la guía *Cimientos de UX* (10 heurísticas + escala 0-4). Lo corregido:
+
+| H | Qué había | Qué hay ahora |
+|---|---|---|
+| 01 Estado del sistema | Pantalla gris sin nada al arrancar; "Generando…" sin contexto; botones sin bloqueo | Pantalla "Abriendo tu plataforma…", **skeletons** en calendario/bandeja/inicio, tarjeta "Redactando 5 propuestas… 10-20 s", spinner en Descargar, botones bloqueados mientras procesan |
+| 02 Mundo real | Etiquetas internas `IG`, `in`, `Shorts` a la vista | Nombres reales: Instagram, LinkedIn, Shorts… (`PLATFORM_LABEL`) |
+| 03 Control y libertad | Aprobar/Descartar/Programar eran irreversibles | Toast con **Deshacer** (6 s) en las tres; **Esc** cierra el copiloto; "se guarda solo" visible |
+| 04 Consistencia | "Publicar ahora" (no publica) vs "Aprobar y programar"; móvil con botones distintos a escritorio | Una sola acción principal: **Programar publicación**, igual en escritorio y móvil |
+| 05 Prevención | Hora "sugerir hora · editar" era decorativa; se podía programar sin redes | **Selector de día + hora** real; botón bloqueado si no hay ninguna red activa, con aviso |
+| 06 Reconocer | 3 cuadritos de color sin nombre | Estilo **Blanca / Negra / Azul** con nombre visible y `aria-pressed` |
+| 07 Eficiencia | Sin atajos | Enter envía al copiloto, Enter genera con tema, Esc vuelve |
+| 08 Minimalismo | 3 botones del mismo peso al pie del copiloto, "Editor manual — próximamente" | 1 primaria + 1 secundaria; se quitó lo que no hacía nada |
+| 09 Errores | "No pude generar la imagen", "Correo o contraseña incorrectos." | Dicen qué pasó y cómo seguir; **pantalla "Sin conexión" con Reintentar** si Supabase no responde en 8 s |
+| 10 Ayuda | "Sin publicaciones", "Todo revisado" sin pista | Estados vacíos que explican qué va ahí y qué hacer; tooltips en acciones; nota "por ahora publicas tú" |
+
+Checklist rápido de la guía para futuras pantallas: `¿sabe qué pasa? ¿habla su idioma? ¿puede deshacer? ¿es consistente? ¿evita el error? ¿lo ve o lo recuerda? ¿hay atajo? ¿sobra algo? ¿el error explica? ¿hay ayuda ahí?`
+
+## Operación — no dejar que Supabase se pause
+
+El plan Free pausa el proyecto tras ~7 días sin tráfico y la app queda en "Sin conexión". `.github/workflows/keepalive.yml` hace una consulta diaria (08:00 Chile) con los secretos `SUPABASE_URL` / `SUPABASE_ANON_KEY` del repo. Si igual se pausa, reactivar desde el panel de Supabase (o con el MCP: `restore_project`).
+
 ## Deploy (GitHub Pages)
 
 ```bash

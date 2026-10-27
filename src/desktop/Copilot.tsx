@@ -2,17 +2,28 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useStore } from "../store";
 import { VARIANTS, HANDLE } from "../data/mock";
 import { DAY_NAMES_FULL } from "../lib/dates";
-import { platformsStr } from "../lib/platforms";
+import { PLATFORM_LABEL, platformsStr } from "../lib/platforms";
 import Card916 from "../components/Card916";
 import { downloadPiecePng } from "../lib/exportCard";
 
 const WORK_CHIPS = ["Hazlo más corto", "Cambia el gancho", "Tono más directo"];
+const VARIANT_NAMES = ["Blanca", "Negra", "Azul"];
 
 export default function Copilot() {
   const s = useStore();
   const { actions } = s;
   const work = s.proposals.find((p) => p.id === s.work);
   const [draft, setDraft] = useState("");
+  const [exporting, setExporting] = useState(false);
+
+  // H03/H07 — Esc cierra el copiloto sin perder nada (todo se guarda solo)
+  useEffect(() => {
+    const onEsc = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") actions.closeWork();
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [actions]);
 
   // Caption editable: estado local + guardado con debounce
   const [caption, setCaption] = useState(work?.caption ?? "");
@@ -31,9 +42,21 @@ export default function Copilot() {
 
   const cur = VARIANTS[s.variant];
   const isVideo = work.format === "video";
-  const schedule = work.time
-    ? `${DAY_NAMES_FULL[work.day]} · ${work.time}`
-    : `${DAY_NAMES_FULL[work.day]} · sugerir hora`;
+
+  const exportPng = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const r = await downloadPiecePng(work, cur);
+      actions.flash(`Imagen descargada · ${r.width}×${r.height} px`);
+    } catch {
+      actions.flash("No pude crear la imagen. Vuelve a intentarlo en unos segundos.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const activeCount = work.platforms.filter((t) => !s.pubOff[t]).length;
 
   const send = () => {
     actions.sendChat(draft);
@@ -56,6 +79,7 @@ export default function Copilot() {
         <button
           className="press"
           onClick={actions.closeWork}
+          title="Volver al calendario (Esc). Los cambios ya están guardados."
           style={{ all: "unset", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--tem-handle)" }}
         >
           ← Volver
@@ -135,7 +159,7 @@ export default function Copilot() {
                   border: "1.5px solid var(--tem-ink)", borderRadius: 999, background: "var(--tem-surface)",
                 }}
               >
-                {p}
+                {PLATFORM_LABEL[p]}
               </span>
             ))}
           </div>
@@ -155,14 +179,16 @@ export default function Copilot() {
           />
         )}
 
-        {/* variantes */}
+        {/* variantes — H06: ícono + etiqueta, no hay que adivinar */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {VARIANTS.map((v, i) => (
             <button
               key={i}
               className="press"
               onClick={() => actions.setVariant(i as 0 | 1 | 2)}
-              aria-label={`Variante ${i + 1}`}
+              aria-label={`Estilo ${VARIANT_NAMES[i]}`}
+              aria-pressed={s.variant === i}
+              title={`Estilo ${VARIANT_NAMES[i]}`}
               style={{
                 all: "unset", cursor: "pointer", width: 40, height: 64, borderRadius: 9,
                 background: v.bg, border: `2px solid ${s.variant === i ? "var(--tem-orange)" : "#D8D8D8"}`,
@@ -170,7 +196,7 @@ export default function Copilot() {
             />
           ))}
           <span style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)", marginLeft: 4 }}>
-            3 variantes
+            Estilo: <b style={{ color: "var(--tem-ink)", fontWeight: 600 }}>{VARIANT_NAMES[s.variant]}</b>
           </span>
         </div>
 
@@ -208,15 +234,35 @@ export default function Copilot() {
       >
         <div>
           <MetaLabel>Programar</MetaLabel>
-          <div
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              border: "1.5px solid var(--tem-ink)", borderRadius: 12, padding: "11px 13px",
-              fontSize: 13, fontWeight: 600,
-            }}
-          >
-            {schedule}
-            <span style={{ color: "var(--tem-orange)" }}>editar</span>
+          {/* H05 — selectores en vez de texto libre: día y hora no pueden quedar inválidos */}
+          <div style={{ display: "flex", gap: 6 }}>
+            <select
+              value={work.day}
+              onChange={(e) => actions.updateSchedule(work.id, { day: Number(e.target.value) })}
+              aria-label="Día de publicación"
+              style={{
+                flex: 1, minWidth: 0, fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 600, color: "var(--tem-ink)",
+                background: "var(--tem-surface)", border: "1.5px solid var(--tem-ink)", borderRadius: 12, padding: "10px 10px",
+              }}
+            >
+              {DAY_NAMES_FULL.map((d, i) => (
+                <option key={d} value={i}>{d}</option>
+              ))}
+            </select>
+            <input
+              type="time"
+              value={work.time}
+              onChange={(e) => actions.updateSchedule(work.id, { time: e.target.value })}
+              aria-label="Hora de publicación"
+              title="Déjalo vacío para que el asistente sugiera la hora"
+              style={{
+                width: 108, fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 600, color: "var(--tem-ink)",
+                background: "var(--tem-surface)", border: "1.5px solid var(--tem-ink)", borderRadius: 12, padding: "9px 10px",
+              }}
+            />
+          </div>
+          <div style={{ marginTop: 6, fontSize: 11, fontWeight: 500, color: "var(--tem-handle)" }}>
+            {work.time ? `Sale el ${DAY_NAMES_FULL[work.day].toLowerCase()} a las ${work.time}.` : "Sin hora: el asistente sugiere la mejor."}
           </div>
         </div>
 
@@ -267,6 +313,7 @@ export default function Copilot() {
                   key={t}
                   className="press-sm"
                   onClick={() => actions.togglePub(t)}
+                  aria-pressed={on}
                   style={{
                     all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: "7px 13px",
                     borderRadius: 999, transition: "transform .14s var(--ease-spring)",
@@ -275,51 +322,46 @@ export default function Copilot() {
                     color: on ? "#fff" : "var(--tem-ink)",
                   }}
                 >
-                  {t}
+                  {PLATFORM_LABEL[t]}
                 </button>
               );
             })}
           </div>
-          <div style={{ marginTop: 8, fontSize: 11, fontWeight: 500, color: "var(--tem-handle)" }}>
-            Toca para activar o desactivar cada red.
+          <div style={{ marginTop: 8, fontSize: 11, fontWeight: 500, color: activeCount === 0 ? "var(--tem-orange)" : "var(--tem-handle)" }}>
+            {activeCount === 0 ? "Activa al menos una red para poder programar." : "Toca una red para quitarla o volver a incluirla."}
           </div>
         </div>
 
+        {/* H08 — una sola acción principal (naranja); el resto, secundarias */}
         <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 9 }}>
-          <button
-            className="press invert-hover"
-            onClick={() =>
-              downloadPiecePng(work, cur)
-                .then((r) => actions.flash(`Imagen lista · ${r.width}×${r.height}`))
-                .catch(() => actions.flash("No pude generar la imagen"))
-            }
-            style={{
-              all: "unset", cursor: "pointer", textAlign: "center", fontSize: 13, fontWeight: 600,
-              color: "var(--tem-ink)", border: "1.5px solid var(--tem-ink)", padding: 11, borderRadius: 12,
-            }}
-          >
-            {isVideo ? "Descargar miniatura" : "Descargar imagen"}
-          </button>
           <button
             className="press"
             onClick={actions.publishNow}
+            disabled={activeCount === 0}
+            title={activeCount === 0 ? "Activa al menos una red" : undefined}
             style={{
               all: "unset", cursor: "pointer", textAlign: "center", fontSize: 14, fontWeight: 600,
               background: "var(--tem-orange)", color: "#fff", padding: 13, borderRadius: 12,
             }}
           >
-            Publicar ahora
+            Programar publicación
           </button>
           <button
             className="press invert-hover"
-            onClick={() => actions.flash("Editor manual — próximamente")}
+            onClick={() => void exportPng()}
+            disabled={exporting}
             style={{
               all: "unset", cursor: "pointer", textAlign: "center", fontSize: 13, fontWeight: 600,
               color: "var(--tem-ink)", border: "1.5px solid var(--tem-ink)", padding: 11, borderRadius: 12,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             }}
           >
-            Abrir editor manual
+            {exporting && <span className="spinner spinner-sm" aria-hidden="true" />}
+            {exporting ? "Creando imagen…" : isVideo ? "Descargar miniatura" : "Descargar imagen"}
           </button>
+          <div style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-handle)", textAlign: "center", lineHeight: 1.4 }}>
+            Por ahora publicas tú: descarga la imagen y copia el caption.
+          </div>
         </div>
       </aside>
     </div>

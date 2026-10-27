@@ -112,13 +112,15 @@ export async function updateConnection(network: Network, connected: boolean): Pr
 /** Actualiza campos editables de una pieza (copiloto / caption). */
 export async function updateProposalFields(
   id: string,
-  fields: Partial<Pick<Proposal, "eyebrow" | "line" | "caption" | "tags">>,
+  fields: Partial<Pick<Proposal, "eyebrow" | "line" | "caption" | "tags" | "day" | "time">>,
 ): Promise<void> {
   if (!supabase) return;
   const row: Record<string, unknown> = {};
   if (fields.eyebrow !== undefined) row.eyebrow = fields.eyebrow;
   if (fields.caption !== undefined) row.caption = fields.caption;
   if (fields.tags !== undefined) row.tags = fields.tags;
+  if (fields.day !== undefined) row.day = fields.day;
+  if (fields.time !== undefined) row.time = fields.time;
   if (fields.line) {
     row.line_pre = fields.line.pre;
     row.line_key = fields.line.key;

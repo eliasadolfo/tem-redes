@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { useStore } from "../store";
-import { platformsStr } from "../lib/platforms";
+import { PLATFORM_LABEL } from "../lib/platforms";
 import type { Proposal } from "../types";
 
 export default function Inbox() {
-  const { proposals, generating, actions } = useStore();
+  const { proposals, generating, loading, actions } = useStore();
   const items = proposals.filter((p) => p.status === "proposal");
   const [tema, setTema] = useState("");
 
@@ -39,14 +39,35 @@ export default function Inbox() {
               padding: "12px 18px", borderRadius: 12, flexShrink: 0,
             }}
           >
-            <Sparkles size={16} strokeWidth={2.4} />
-            {generating ? "Generando…" : "Generar propuestas"}
+            {generating ? <span className="spinner spinner-sm spinner-light" aria-hidden="true" /> : <Sparkles size={16} strokeWidth={2.4} />}
+            {generating ? "El asistente está escribiendo…" : "Generar propuestas"}
           </button>
         </div>
       </div>
 
-      {items.length === 0 ? (
-        <EmptyState />
+      {/* H01 — mientras la IA trabaja, se ve dónde van a aparecer las piezas */}
+      {generating && (
+        <div
+          role="status"
+          style={{
+            background: "var(--tem-surface)", borderRadius: 22, padding: 22, boxShadow: "var(--sh-card)",
+            border: "1.5px dashed var(--tem-orange)", marginBottom: 14, display: "flex", alignItems: "center", gap: 12,
+          }}
+        >
+          <span className="spinner" aria-hidden="true" />
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>Redactando 5 propuestas nuevas…</div>
+            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)" }}>Suele tardar entre 10 y 20 segundos.</div>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }} aria-busy="true">
+          {[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 150, borderRadius: 22 }} />)}
+        </div>
+      ) : items.length === 0 && !generating ? (
+        <EmptyState onGenerate={() => actions.generate({ tema })} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {items.map((p) => (
@@ -74,7 +95,7 @@ function InboxCard({ p }: { p: Proposal }) {
                 border: "1.5px solid var(--tem-ink)", borderRadius: 999,
               }}
             >
-              {t}
+              {PLATFORM_LABEL[t]}
             </span>
           ))}
         </div>
@@ -85,6 +106,7 @@ function InboxCard({ p }: { p: Proposal }) {
 
       <button
         onClick={() => actions.openWork(p.id)}
+        title="Abrir en el copiloto para editar"
         style={{ all: "unset", cursor: "pointer", display: "block", width: "100%" }}
       >
         <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-.01em", margin: "12px 0 8px", lineHeight: 1.2 }}>
@@ -93,7 +115,6 @@ function InboxCard({ p }: { p: Proposal }) {
         <div style={{ fontSize: 13, fontWeight: 500, color: "var(--tem-handle)", lineHeight: 1.4 }}>
           {p.caption}
         </div>
-        <div style={{ marginTop: 8, fontSize: 12, color: "var(--tem-handle)" }}>{platformsStr(p.platforms)}</div>
       </button>
 
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
@@ -120,19 +141,21 @@ function InboxCard({ p }: { p: Proposal }) {
         <button
           className="press"
           onClick={() => actions.reject(p.id)}
+          title="Quitar de la bandeja (puedes deshacerlo)"
           style={{
             all: "unset", cursor: "pointer", fontSize: 14, fontWeight: 600, color: "var(--tem-handle)",
             border: "1.5px solid var(--tem-border-muted)", padding: "11px 16px", borderRadius: 12,
           }}
         >
-          ✕ Descartar
+          Descartar
         </button>
       </div>
     </div>
   );
 }
 
-function EmptyState() {
+/** H10 — estado vacío que explica qué va aquí y cómo empezar. */
+function EmptyState({ onGenerate }: { onGenerate: () => void }) {
   return (
     <div
       style={{
@@ -141,9 +164,21 @@ function EmptyState() {
       }}
     >
       <div style={{ fontSize: 18, fontWeight: 700 }}>Todo revisado</div>
-      <div style={{ marginTop: 8, fontSize: 13, fontWeight: 500, color: "var(--tem-handle)" }}>
-        No hay propuestas pendientes. ¡Hagamos que pase!
+      <div style={{ marginTop: 8, fontSize: 13, fontWeight: 500, color: "var(--tem-handle)", maxWidth: 380, marginInline: "auto", lineHeight: 1.5 }}>
+        Aquí aparecen las propuestas que redacta el asistente. Pídele una tanda nueva con el tema de la semana y
+        apruébalas, edítalas o descártalas.
       </div>
+      <button
+        className="press"
+        onClick={onGenerate}
+        style={{
+          all: "unset", cursor: "pointer", marginTop: 18, display: "inline-flex", alignItems: "center", gap: 8,
+          fontSize: 14, fontWeight: 600, background: "var(--tem-orange)", color: "#fff", padding: "12px 18px", borderRadius: 12,
+        }}
+      >
+        <Sparkles size={16} strokeWidth={2.4} />
+        Generar propuestas
+      </button>
     </div>
   );
 }
