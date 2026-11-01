@@ -4,7 +4,7 @@ import type { DesktopView } from "../types";
 
 const NAV: { key: DesktopView; label: string }[] = [
   { key: "calendar", label: "Calendario" },
-  { key: "inbox", label: "Propuestas" },
+  { key: "ideas", label: "Ideas" },
   { key: "library", label: "Biblioteca" },
   { key: "metrics", label: "Métricas" },
   { key: "newsletter", label: "Newsletter" },
@@ -62,7 +62,7 @@ export default function Sidebar() {
               }}
             >
               <span>{item.label}</span>
-              {item.key === "inbox" && pending > 0 && (
+              {item.key === "ideas" && pending > 0 && (
                 <span
                   style={{
                     background: "var(--tem-orange)",

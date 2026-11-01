@@ -12,11 +12,13 @@ import type {
   ChatMessage,
   DesktopView,
   Grain,
+  HeadlineLine,
   MetricNet,
   MobileTab,
   Network,
   PlatformTag,
   Proposal,
+  Stage,
 } from "./types";
 import { DAY, mondayOf, noon } from "./lib/dates";
 import { INITIAL_PROPOSALS } from "./data/mock";
@@ -27,9 +29,11 @@ import {
   updateConnection,
   updateProposalFields,
   updateProposalStatus,
+  type ProposalFields,
 } from "./lib/db";
 import { adjustPiece, generateProposals, type GenerateOptions } from "./lib/ai";
 import { PLATFORM_LABEL } from "./lib/platforms";
+import { STAGE_LABEL, missingFor, statusForStage } from "./lib/stages";
 
 /* -------------------------------------------------------------------------- */
 /*  Estado                                                                     */
@@ -75,7 +79,7 @@ interface State {
 }
 
 const initialState: State = {
-  view: "calendar",
+  view: "tablero",
   tab: "inicio",
   work: null,
   variant: 0,
@@ -103,6 +107,16 @@ const initialState: State = {
   chatBusy: false,
 };
 
+/** Primer mensaje del copiloto según la etapa en que se abre la pieza. */
+const OPEN_TEXT: Record<Stage, string> = {
+  idea: "Esta es la idea en crudo. Dime por qué importa o pídeme ganchos y la convertimos en guion.",
+  guion: "Vamos con el guion: gancho, desarrollo y cierre. Puedo escribirlo o sugerirte las tomas.",
+  grabar: "Todo listo para grabar. Revisa el checklist, abre el teleprompter y marca las tomas.",
+  editar: "Ya está grabada. Te propongo cortes, el caption y lo que falta para dejarla lista.",
+  listo: "Solo falta elegir día, hora y redes. Cuando la programes, sale al calendario.",
+  publicado: "Anota los resultados y te digo qué aprendimos para la próxima pieza.",
+};
+
 /* -------------------------------------------------------------------------- */
 /*  Acciones                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -115,10 +129,23 @@ interface Actions {
   setVariant: (v: 0 | 1 | 2) => void;
   togglePub: (tag: PlatformTag) => void;
   sendChat: (text: string) => void;
-  approve: (id: string) => void;
+  /** Agrega un mensaje del asistente al chat del copiloto (p.ej. tras un encargo de IA). */
+  say: (text: string) => void;
   reject: (id: string) => void;
+  /** "Programar publicación": pasa la pieza abierta a Listo con las redes activas. */
   publishNow: () => void;
-  flash: (text: string) => void;
+  /**
+   * Mueve la pieza a otra etapa. Hacia atrás siempre; hacia adelante solo si
+   * cumple el requisito (si no, avisa qué falta). Devuelve true si se movió.
+   */
+  setStage: (id: string, stage: Stage) => boolean;
+  /** Actualiza campos sueltos de una pieza y los persiste. */
+  updateFields: (id: string, fields: ProposalFields) => void;
+  /** Crea una idea nueva (entrada rápida o a partir de un aprendizaje). */
+  addIdea: (idea: { line: HeadlineLine; why?: string; source?: string; eyebrow?: string }) => Proposal;
+  /** Guarda varias piezas nuevas ya armadas (p.ej. ideas generadas por la IA). */
+  addProposals: (items: Proposal[]) => Promise<void>;
+  flash: (text: string, undo?: (() => void) | null) => void;
   // calendario
   calWeekNav: (delta: number) => void;
   toggleCalPicker: () => void;
@@ -174,20 +201,78 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const actions = useMemo<Actions>(() => {
-    const openWork = (id: string) =>
+    const openWork = (id: string) => {
+      const p = sRef.current.proposals.find((x) => x.id === id);
+      const stage = p?.stage ?? "idea";
       patch({
         work: id,
         variant: 0,
         pubOff: {},
-        chat: [
-          {
-            role: "ai",
-            text: "Preparé esta pieza. Puedes cambiar el estilo con las variantes o pedirme un ajuste.",
-          },
-        ],
+        chat: [{ role: "ai", text: OPEN_TEXT[stage] }],
       });
+    };
+
+    /** Aplica campos a una pieza en memoria y en Supabase. */
+    const applyFields = (id: string, fields: ProposalFields) => {
+      patch((prev) => ({
+        proposals: prev.proposals.map((p) => (p.id === id ? { ...p, ...fields } : p)),
+      }));
+      void updateProposalFields(id, fields);
+    };
+
+    const setStage = (id: string, stage: Stage): boolean => {
+      const p = sRef.current.proposals.find((x) => x.id === id);
+      if (!p || p.stage === stage) return false;
+      const active = p.platforms.filter((t) => !sRef.current.pubOff[t]).length;
+      const missing = missingFor(p, stage, active);
+      if (missing) {
+        flash(missing);
+        return false;
+      }
+      const before: ProposalFields = {
+        stage: p.stage,
+        status: p.status,
+        recorded_at: p.recorded_at,
+        published_at: p.published_at,
+      };
+      const next: ProposalFields = { stage, status: statusForStage(stage) };
+      if (stage === "editar" && !p.recorded_at) next.recorded_at = new Date().toISOString();
+      if (stage === "publicado" && !p.published_at) next.published_at = new Date().toISOString();
+      applyFields(id, next);
+      flash(`Pasó a ${STAGE_LABEL[stage]}`, () => applyFields(id, before));
+      return true;
+    };
 
     return {
+      setStage,
+      updateFields: applyFields,
+      addIdea: ({ line, why, source, eyebrow }) => {
+        const dow = new Date().getDay(); // 0 = domingo
+        const idea: Proposal = {
+          id: crypto.randomUUID(),
+          day: dow >= 1 && dow <= 5 ? dow - 1 : 0,
+          time: "",
+          platforms: ["IG"],
+          type: "Reel",
+          eyebrow: eyebrow ?? "LA IDEA",
+          line,
+          status: "proposal",
+          caption: "",
+          tags: [],
+          stage: "idea",
+          source: source || undefined,
+          notes: why || undefined,
+        };
+        patch((prev) => ({ proposals: [...prev.proposals, idea] }));
+        void insertProposals([idea]);
+        return idea;
+      },
+      addProposals: async (items) => {
+        if (items.length === 0) return;
+        await insertProposals(items);
+        patch((prev) => ({ proposals: [...prev.proposals, ...items] }));
+      },
+      say: (text) => patch((prev) => ({ chat: [...prev.chat, { role: "ai", text }] })),
       go: (view) => patch({ view, work: null }),
       setTab: (tab) => patch({ tab }),
       openWork,
@@ -237,22 +322,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         void updateProposalFields(id, { caption });
       },
       // H03 — toda acción de estado se puede deshacer desde el toast.
-      approve: (id) => {
-        const before = sRef.current.proposals.find((p) => p.id === id)?.status ?? "proposal";
-        patch((prev) => ({
-          proposals: prev.proposals.map((p) =>
-            p.id === id ? { ...p, status: "scheduled" } : p,
-          ),
-          work: null,
-        }));
-        void updateProposalStatus(id, "scheduled");
-        flash("Aprobada y programada", () => {
-          patch((prev) => ({
-            proposals: prev.proposals.map((p) => (p.id === id ? { ...p, status: before } : p)),
-          }));
-          void updateProposalStatus(id, before);
-        });
-      },
       reject: (id) => {
         const before = sRef.current.proposals.find((p) => p.id === id)?.status ?? "proposal";
         patch((prev) => ({
@@ -262,7 +331,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           work: null,
         }));
         void updateProposalStatus(id, "rejected");
-        flash("Propuesta descartada", () => {
+        flash("Pieza descartada", () => {
           patch((prev) => ({
             proposals: prev.proposals.map((p) => (p.id === id ? { ...p, status: before } : p)),
           }));
@@ -286,19 +355,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           return;
         }
         const nice = active.map((t) => PLATFORM_LABEL[t]).join(", ");
-        const before = w.status;
-        patch((p) => ({
-          proposals: p.proposals.map((x) =>
-            x.id === w.id ? { ...x, status: "scheduled" } : x,
-          ),
-          work: null,
-        }));
-        void updateProposalStatus(w.id, "scheduled");
+        const beforePlatforms = w.platforms;
+        // "Listo" guarda las redes elegidas: las desactivadas se quitan de la pieza.
+        if (active.length !== w.platforms.length) applyFields(w.id, { platforms: active });
+        const already = w.stage === "listo" || w.stage === "publicado";
+        if (!already && !setStage(w.id, "listo")) {
+          applyFields(w.id, { platforms: beforePlatforms });
+          return;
+        }
+        patch({ work: null, pubOff: {} });
         flash("Programada para " + nice, () => {
-          patch((prev) => ({
-            proposals: prev.proposals.map((p) => (p.id === w.id ? { ...p, status: before } : p)),
-          }));
-          void updateProposalStatus(w.id, before);
+          applyFields(w.id, { stage: w.stage, status: w.status, platforms: beforePlatforms });
         });
       },
       flash,
@@ -380,10 +447,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const existentes = sRef.current.proposals
             .filter((p) => p.status !== "rejected")
             .map((p) => p.line.pre + p.line.key + p.line.post);
-          const nuevas = await generateProposals({ count: 5, ...opts, existentes });
+          const nuevas = (await generateProposals({ count: 5, ...opts, existentes })).map((p) => ({
+            ...p,
+            stage: "idea" as const,
+            status: "proposal" as const,
+            source: opts?.tema ? `Tema de la semana: ${opts.tema}` : "Propuesta del asistente",
+          }));
           await insertProposals(nuevas);
-          patch((prev) => ({ proposals: [...prev.proposals, ...nuevas], view: "inbox" }));
-          flash(`${nuevas.length} propuestas nuevas en la bandeja`);
+          patch((prev) => ({ proposals: [...prev.proposals, ...nuevas], view: "ideas" }));
+          flash(`${nuevas.length} ideas nuevas`);
         } catch (e) {
           console.error("generate:", e);
           // H09: qué pasó + cómo seguir, sin códigos técnicos

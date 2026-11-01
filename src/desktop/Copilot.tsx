@@ -194,7 +194,7 @@ export default function Copilot() {
         <div style={{ display: "flex", gap: 10, marginTop: 2 }}>
           <button
             className="press"
-            onClick={() => actions.approve(work.id)}
+            onClick={() => actions.setStage(work.id, "listo")}
             style={{
               all: "unset", cursor: "pointer", fontSize: 14, fontWeight: 600, background: "var(--tem-orange)",
               color: "#fff", padding: "13px 26px", borderRadius: 14,

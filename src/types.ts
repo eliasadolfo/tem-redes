@@ -17,12 +17,44 @@ export type Network =
   | "YouTube"
   | "LinkedIn";
 
+/**
+ * `status` se mantiene por compatibilidad con la v1:
+ * `scheduled` ⇔ etapa `listo`/`publicado`; `rejected` = descartada; `proposal` = en producción.
+ */
 export type ProposalStatus = "proposal" | "scheduled" | "rejected";
+
+/** Etapas de la línea de producción (v2). El orden importa. */
+export type Stage = "idea" | "guion" | "grabar" | "editar" | "listo" | "publicado";
 
 export interface HeadlineLine {
   pre: string;
   key: string; // la palabra clave va en naranja
   post: string;
+}
+
+/** Guion de la pieza: gancho, desarrollo, cierre/CTA, formato y duración. */
+export interface Script {
+  hook: string;
+  body: string;
+  cta: string;
+  duration_s: number | null;
+  format: string; // "Reel", "Short", "Video largo", "Post", "Carrusel", "Newsletter"
+}
+
+/** Toma a grabar o ítem de checklist: texto + hecho. */
+export interface CheckItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
+/** Resultados tras publicar + aprendizaje. */
+export interface Results {
+  views: number | null;
+  likes: number | null;
+  saves: number | null;
+  comments: number | null;
+  learned: string;
 }
 
 export interface Proposal {
@@ -38,7 +70,20 @@ export interface Proposal {
   status: ProposalStatus;
   caption: string;
   tags: string[];
-  guion?: string[]; // guion para videos largos
+  guion?: string[]; // guion para videos largos (v1)
+  // --- v2: línea de producción ---
+  stage: Stage;
+  source?: string; // de dónde salió la idea (nota, reunión, comentario…)
+  script?: Script;
+  shots?: CheckItem[];
+  checklist?: CheckItem[];
+  raw_url?: string; // link del bruto (Drive)
+  final_url?: string; // link del video final
+  thumbnail_url?: string;
+  notes?: string; // instrucciones de edición / por qué importa
+  recorded_at?: string; // ISO
+  published_at?: string; // ISO
+  results?: Results;
 }
 
 /** Estilo de variante del card 9:16. */
@@ -71,14 +116,16 @@ export interface ChatMessage {
 }
 
 export type DesktopView =
+  | "tablero"
+  | "ideas"
+  | "grabar"
   | "calendar"
-  | "inbox"
   | "library"
   | "metrics"
   | "newsletter"
   | "settings";
 
-export type MobileTab = "inicio" | "semana" | "metricas" | "perfil";
+export type MobileTab = "inicio" | "grabar" | "semana" | "metricas" | "perfil";
 
 export type MetricNet = "Todas" | "Instagram" | "TikTok" | "YouTube" | "LinkedIn";
 export type Grain = "días" | "meses";

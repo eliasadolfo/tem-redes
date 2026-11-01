@@ -4,7 +4,17 @@
 // app sigue funcionando con los datos mock locales.
 
 import { supabase } from "./supabase";
-import type { Network, Proposal, ProposalStatus, PlatformTag } from "../types";
+import type {
+  CheckItem,
+  Network,
+  Proposal,
+  ProposalStatus,
+  PlatformTag,
+  Results,
+  Script,
+  Stage,
+} from "../types";
+import { defaultStage } from "./stages";
 
 interface ProposalRow {
   id: string;
@@ -22,6 +32,19 @@ interface ProposalRow {
   caption: string;
   tags: string[];
   guion: string[] | null;
+  // v2 — línea de producción
+  stage: Stage | null;
+  source: string | null;
+  script: Script | null;
+  shots: CheckItem[] | null;
+  checklist: CheckItem[] | null;
+  raw_url: string | null;
+  final_url: string | null;
+  thumbnail_url: string | null;
+  notes: string | null;
+  recorded_at: string | null;
+  published_at: string | null;
+  results: Results | null;
 }
 
 function rowToProposal(r: ProposalRow): Proposal {
@@ -39,6 +62,18 @@ function rowToProposal(r: ProposalRow): Proposal {
     caption: r.caption,
     tags: r.tags ?? [],
     guion: r.guion ?? undefined,
+    stage: r.stage ?? defaultStage(r.status),
+    source: r.source ?? undefined,
+    script: r.script ?? undefined,
+    shots: r.shots ?? undefined,
+    checklist: r.checklist ?? undefined,
+    raw_url: r.raw_url ?? undefined,
+    final_url: r.final_url ?? undefined,
+    thumbnail_url: r.thumbnail_url ?? undefined,
+    notes: r.notes ?? undefined,
+    recorded_at: r.recorded_at ?? undefined,
+    published_at: r.published_at ?? undefined,
+    results: r.results ?? undefined,
   };
 }
 
@@ -59,6 +94,18 @@ export function proposalToRow(p: Proposal): ProposalRow {
     caption: p.caption,
     tags: p.tags,
     guion: p.guion ?? null,
+    stage: p.stage,
+    source: p.source ?? null,
+    script: p.script ?? null,
+    shots: p.shots ?? null,
+    checklist: p.checklist ?? null,
+    raw_url: p.raw_url ?? null,
+    final_url: p.final_url ?? null,
+    thumbnail_url: p.thumbnail_url ?? null,
+    notes: p.notes ?? null,
+    recorded_at: p.recorded_at ?? null,
+    published_at: p.published_at ?? null,
+    results: p.results ?? null,
   };
 }
 
@@ -109,18 +156,48 @@ export async function updateConnection(network: Network, connected: boolean): Pr
   if (error) console.error("updateConnection:", error.message);
 }
 
-/** Actualiza campos editables de una pieza (copiloto / caption). */
-export async function updateProposalFields(
-  id: string,
-  fields: Partial<Pick<Proposal, "eyebrow" | "line" | "caption" | "tags" | "day" | "time">>,
-): Promise<void> {
+/** Campos de la pieza que se pueden actualizar sueltos (ficha, copiloto, tablero). */
+export type ProposalFields = Partial<
+  Pick<
+    Proposal,
+    | "eyebrow"
+    | "line"
+    | "caption"
+    | "tags"
+    | "day"
+    | "time"
+    | "status"
+    | "stage"
+    | "source"
+    | "script"
+    | "shots"
+    | "checklist"
+    | "raw_url"
+    | "final_url"
+    | "thumbnail_url"
+    | "notes"
+    | "recorded_at"
+    | "published_at"
+    | "results"
+    | "platforms"
+  >
+>;
+
+/** Columnas que se copian tal cual (undefined = no tocar; el resto se guarda, null incluido). */
+const PLAIN_COLUMNS = [
+  "eyebrow", "caption", "tags", "day", "time", "status", "stage", "source", "script", "shots",
+  "checklist", "raw_url", "final_url", "thumbnail_url", "notes", "recorded_at", "published_at",
+  "results", "platforms",
+] as const;
+
+/** Actualiza campos editables de una pieza (ficha / copiloto / etapa). */
+export async function updateProposalFields(id: string, fields: ProposalFields): Promise<void> {
   if (!supabase) return;
   const row: Record<string, unknown> = {};
-  if (fields.eyebrow !== undefined) row.eyebrow = fields.eyebrow;
-  if (fields.caption !== undefined) row.caption = fields.caption;
-  if (fields.tags !== undefined) row.tags = fields.tags;
-  if (fields.day !== undefined) row.day = fields.day;
-  if (fields.time !== undefined) row.time = fields.time;
+  for (const k of PLAIN_COLUMNS) {
+    const v = fields[k];
+    if (v !== undefined) row[k] = v;
+  }
   if (fields.line) {
     row.line_pre = fields.line.pre;
     row.line_key = fields.line.key;
@@ -131,7 +208,7 @@ export async function updateProposalFields(
   if (error) console.error("updateProposalFields:", error.message);
 }
 
-/** Inserta propuestas nuevas (p.ej. generadas por la IA). */
+/** Inserta propuestas nuevas (p.ej. generadas por la IA o ideas de Elías). */
 export async function insertProposals(proposals: Proposal[]): Promise<void> {
   if (!supabase || proposals.length === 0) return;
   const { error } = await supabase.from("tem_proposals").insert(proposals.map(proposalToRow));

@@ -13,8 +13,8 @@ export default function DesktopApp() {
 
   let content;
   if (work) content = <Copilot />;
-  else if (view === "calendar") content = <Calendar />;
-  else if (view === "inbox") content = <Inbox />;
+  else if (view === "calendar" || view === "tablero" || view === "grabar") content = <Calendar />;
+  else if (view === "ideas") content = <Inbox />;
   else if (view === "library") content = <Library />;
   else if (view === "metrics") content = <Metrics />;
   else if (view === "newsletter") content = <Newsletter />;

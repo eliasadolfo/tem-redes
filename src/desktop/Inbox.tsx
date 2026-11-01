@@ -120,7 +120,7 @@ function InboxCard({ p }: { p: Proposal }) {
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
         <button
           className="press"
-          onClick={() => actions.approve(p.id)}
+          onClick={() => actions.setStage(p.id, "listo")}
           style={{
             all: "unset", cursor: "pointer", flex: 1, textAlign: "center", fontSize: 14, fontWeight: 600,
             background: "var(--tem-orange)", color: "#fff", padding: "11px", borderRadius: 12,

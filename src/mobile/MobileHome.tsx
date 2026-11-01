@@ -97,7 +97,7 @@ function HomeCard({ p }: { p: Proposal }) {
       <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
         <button
           className="press-sm"
-          onClick={() => actions.approve(p.id)}
+          onClick={() => actions.setStage(p.id, "listo")}
           style={{ all: "unset", cursor: "pointer", flex: 1, textAlign: "center", fontSize: 13, fontWeight: 600, padding: 11, borderRadius: 12, background: "var(--tem-orange)", color: "#fff" }}
         >
           Aprobar
