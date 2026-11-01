@@ -147,21 +147,12 @@ export default function Copilot() {
         }}
       >
         <div style={{ alignSelf: "stretch", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          {/* H08 — una sola vez: las redes ya están en "Publicar en" */}
           <div style={{ fontSize: 15, fontWeight: 600 }}>
             {work.type} · {platformsStr(work.platforms)}
           </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            {work.platforms.map((p) => (
-              <span
-                key={p}
-                style={{
-                  fontSize: 11, fontWeight: 600, padding: "4px 10px",
-                  border: "1.5px solid var(--tem-ink)", borderRadius: 999, background: "var(--tem-surface)",
-                }}
-              >
-                {PLATFORM_LABEL[p]}
-              </span>
-            ))}
+          <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)" }}>
+            {work.status === "scheduled" ? "Programada" : "Propuesta del asistente"}
           </div>
         </div>
 
