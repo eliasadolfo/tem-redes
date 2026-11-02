@@ -23,7 +23,7 @@ rediseño está en `docs/REDISENO.md`; lo que costó, en `docs/TRAMPAS.md`.
 | **Guion** | Gancho, desarrollo, cierre; formato, duración, lista de tomas | gancho, desarrollo y ≥1 toma |
 | **Grabar** | Hoja de rodaje del formato (maqueta + directrices de la Oficina de Contenido), checklist, teleprompter, texto en pantalla por toma, modo de edición, link del bruto, **entrega al editor** | toda la entrega marcada: guion, tomas grabadas, texto en pantalla en cada toma, modo A/B/C, bruto y los ítems manuales del formato |
 | **Editar** | Instrucciones de corte, caption + hashtags, links del final y la miniatura | link del video final + caption |
-| **Listo** | Día, hora y redes elegidas (sale al calendario) | ≥1 red activa |
+| **Listo** | Día, hora y redes elegidas (sale al calendario); **Publicar ahora / Programar** en las redes conectadas | ≥1 red activa |
 | **Publicado** | Resultados y aprendizaje → vuelve a Ideas | — |
 
 Reglas: **hacia atrás siempre** se puede; hacia adelante solo si cumple el requisito y el
@@ -80,6 +80,30 @@ Todos corren por `runAi` en el store: estado visible (`aiBusy`), mensaje en el c
 **Deshacer** y error que dice cómo seguir. Los webhooks anteriores (`generar-propuestas`,
 `ajustar-pieza`) siguen funcionando: el copiloto ajusta titular/etiqueta/caption/hashtags, y
 si no existe `VITE_N8N_IA_URL` "Generar ideas" usa el generador de propuestas.
+
+### Publicar en las redes (Upload-Post vía n8n)
+
+La app no guarda llaves de ninguna red. Publica a través del workflow n8n
+`TEM Redes — Publicar en redes (Upload-Post, webhook)` (id `WzLre4BUx9iEnq4h`,
+path `tem-redes/publicar`), que usa [Upload-Post](https://www.upload-post.com) como
+conector: ellos tienen las apps aprobadas de Instagram, TikTok, YouTube y LinkedIn;
+Elías conecta cada red una vez (botón **Conectar** en Perfil → autorización oficial de
+la red → vuelve a la app con `?conectada=Red`). Contrato (`src/lib/publish.ts`), body
+como `text/plain` con `{ token, action, … }`:
+
+| action | body | respuesta |
+|---|---|---|
+| `estado` | — | `{ connections: { Instagram: {connected, handle}, … } }`; crea el perfil `tem` si no existe y actualiza `tem_connections` |
+| `conectar` | `network`, `redirect_url` | `{ authorize_url }` (vale 15 min) |
+| `publicar` | `id`, `networks[]`, `when?` (ISO futuro = programar) | `{ posts: { instagram: {ok,url,error…} }, published, scheduled }`; escribe `tem_proposals.posts` y, si publicó, `stage = publicado` |
+
+El video sale de `final_url`: si es un link de Drive, n8n lo descarga con la credencial
+"Google Drive TEM" y lo sube como archivo; si no, manda la URL pública. Captions:
+Instagram/TikTok usan el caption como título; YouTube/LinkedIn usan el titular + caption.
+Pendiente de Elías: cuenta Upload-Post (plan Free: 10 publicaciones/mes, sin TikTok;
+Basic USD 16/mes anual con TikTok) y credencial n8n `httpHeaderAuth`
+"Upload-Post TEM" (header `Authorization: Apikey …`) asignada a los 4 nodos `UP ·`.
+Las fotos (post, carrusel) y texto solo (LinkedIn) todavía no se publican por aquí.
 
 ### Video pesado
 
