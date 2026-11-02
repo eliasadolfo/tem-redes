@@ -6,6 +6,7 @@ import { STAGE_LABEL } from "../lib/stages";
 import Card916 from "../components/Card916";
 import { downloadPiecePng } from "../lib/exportCard";
 import { AdvanceBar, StageHeader, StageSections } from "../components/stages/StageFlow";
+import Teleprompter from "../components/Teleprompter";
 import type { Proposal, Stage } from "../types";
 
 /** Chips del copiloto por etapa: todos ajustan la pieza (titular, etiqueta, caption, hashtags). */
@@ -26,15 +27,17 @@ export default function Copilot() {
   const work = s.proposals.find((p) => p.id === s.work);
   const [draft, setDraft] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [tele, setTele] = useState(false);
 
-  // H03/H07 — Esc cierra la ficha sin perder nada (todo se guarda solo)
+  // H03/H07 — Esc cierra la ficha sin perder nada (todo se guarda solo);
+  // si el teleprompter está abierto, Esc lo cierra a él.
   useEffect(() => {
     const onEsc = (e: globalThis.KeyboardEvent) => {
-      if (e.key === "Escape" && !document.fullscreenElement) actions.closeWork();
+      if (e.key === "Escape" && !tele) actions.closeWork();
     };
     window.addEventListener("keydown", onEsc);
     return () => window.removeEventListener("keydown", onEsc);
-  }, [actions]);
+  }, [actions, tele]);
 
   if (!work) return null;
 
@@ -137,8 +140,9 @@ export default function Copilot() {
           </div>
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: "4px 28px 20px" }}>
-          <StageSections p={work} />
+          <StageSections p={work} slots={{ onTeleprompter: () => setTele(true) }} />
         </div>
+        {tele && <Teleprompter p={work} onClose={() => setTele(false)} />}
         <div style={{ padding: "12px 28px 20px", borderTop: "1px solid var(--tem-border-muted)", background: "var(--tem-bg)" }}>
           <AdvanceBar p={work} />
         </div>

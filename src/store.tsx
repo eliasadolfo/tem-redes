@@ -165,6 +165,8 @@ interface Actions {
   setStage: (id: string, stage: Stage) => boolean;
   /** Actualiza campos sueltos de una pieza y los persiste. */
   updateFields: (id: string, fields: ProposalFields) => void;
+  /** "Grabada ✓": marca todas las tomas, guarda el link del bruto y pasa a Editar (con Deshacer). */
+  finishRecording: (id: string, rawUrl: string) => void;
   /** Crea una idea nueva (entrada rápida o a partir de un aprendizaje). */
   addIdea: (idea: { line: HeadlineLine; why?: string; source?: string; eyebrow?: string }) => Proposal;
   /** Guarda varias piezas nuevas ya armadas (p.ej. ideas generadas por la IA). */
@@ -375,9 +377,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    const finishRecording = (id: string, rawUrl: string) => {
+      const p = sRef.current.proposals.find((x) => x.id === id);
+      if (!p) return;
+      const before: ProposalFields = {
+        shots: p.shots ?? null, raw_url: p.raw_url ?? null, recorded_at: p.recorded_at ?? null, stage: p.stage, status: p.status,
+      };
+      const url = rawUrl.trim();
+      applyFields(id, {
+        shots: (p.shots ?? []).map((s) => ({ ...s, done: true })),
+        raw_url: url || null,
+        recorded_at: p.recorded_at ?? new Date().toISOString(),
+        stage: "editar",
+        status: statusForStage("editar"),
+      });
+      if (sRef.current.work === id) {
+        patch((prev) => ({ chat: [...prev.chat, { role: "ai", text: OPEN_TEXT.editar }] }));
+      }
+      flash("Grabada · pasó a Editar", () => applyFields(id, before));
+    };
+
     return {
       setStage,
       updateFields: applyFields,
+      finishRecording,
       addIdea,
       reject,
       addProposals: async (items) => {

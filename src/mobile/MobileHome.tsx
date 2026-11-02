@@ -1,14 +1,39 @@
 import { useState } from "react";
 import logoBlack from "../assets/img/logo-tem-black.png";
 import { useStore } from "../store";
-import { PLATFORM_LABEL } from "../lib/platforms";
-import type { Proposal } from "../types";
+import PieceCard from "../components/PieceCard";
+import { STAGES, STAGE_HELP, STAGE_LABEL, parseLine } from "../lib/stages";
+import { DAY_NAMES_FULL } from "../lib/dates";
+import { INPUT, BTN_PRIMARY, BTN_SECONDARY } from "../components/stages/ui";
+import type { Proposal, Stage } from "../types";
 
+/** Inicio móvil: resumen del tablero + "qué toca hoy" + idea rápida. */
 export default function MobileHome() {
   const { proposals, generating, loading, actions } = useStore();
+  const [line, setLine] = useState("");
   const [tema, setTema] = useState("");
-  const pending = proposals.filter((p) => p.status === "proposal");
-  const scheduled = proposals.filter((p) => p.status === "scheduled").length;
+  const active = proposals.filter((p) => p.status !== "rejected");
+  const count = (st: Stage) => active.filter((p) => p.stage === st).length;
+
+  // Qué toca hoy: lo que hay que grabar, lo que sale hoy y lo que está por editar.
+  const dow = new Date().getDay();
+  const today = dow >= 1 && dow <= 5 ? dow - 1 : -1;
+  const toRecord = active.filter((p) => p.stage === "grabar");
+  const toPublish = active.filter((p) => p.stage === "listo" && p.day === today);
+  const toEdit = active.filter((p) => p.stage === "editar");
+  const todayList: { title: string; items: Proposal[] }[] = [
+    { title: today >= 0 ? `Sale hoy, ${DAY_NAMES_FULL[today].toLowerCase()}` : "Programado", items: toPublish },
+    { title: "Por grabar", items: toRecord },
+    { title: "Por editar", items: toEdit },
+  ].filter((g) => g.items.length > 0);
+
+  const addIdea = () => {
+    const clean = line.trim();
+    if (!clean) return;
+    const idea = actions.addIdea({ line: parseLine(clean) });
+    setLine("");
+    actions.flash("Idea anotada", () => actions.reject(idea.id));
+  };
 
   return (
     <div style={{ padding: "6px 18px 0" }}>
@@ -19,105 +44,79 @@ export default function MobileHome() {
         </div>
       </div>
 
-      <div className="eyebrow" style={{ marginTop: 20 }}>Tu asistente</div>
+      <div className="eyebrow" style={{ marginTop: 20 }}>Línea de producción</div>
       <div style={{ marginTop: 6, fontWeight: 700, fontSize: 26, letterSpacing: "-.02em", lineHeight: 1.08 }}>
-        Preparé {pending.length} comunicaciones para hoy
+        {active.length === 1 ? "1 pieza en curso" : `${active.length} piezas en curso`}
       </div>
-      <div style={{ marginTop: 6, fontWeight: 500, fontSize: 13, color: "var(--tem-handle)" }}>
-        Revísalas, edita y aprueba. {scheduled} ya están programadas esta semana.
-      </div>
-      <input
-        value={tema}
-        onChange={(e) => setTema(e.target.value)}
-        placeholder="Tema de la semana (opcional)"
-        disabled={generating}
-        style={{
-          boxSizing: "border-box", marginTop: 14, width: "100%", fontFamily: "var(--font-ui)", fontSize: 14, fontWeight: 500,
-          color: "var(--tem-ink)", background: "var(--tem-surface)", border: "1.5px solid var(--tem-border-muted)",
-          borderRadius: 12, padding: "12px 14px", outline: "none",
-        }}
-      />
-      <button
-        className="press-sm"
-        onClick={() => actions.generate({ tema })}
-        disabled={generating}
-        style={{
-          all: "unset", cursor: "pointer", boxSizing: "border-box", marginTop: 14, width: "100%", textAlign: "center",
-          fontSize: 14, fontWeight: 600, background: "var(--tem-orange)", color: "#fff", padding: 13, borderRadius: 12,
-        }}
-      >
-        {generating ? "El asistente está escribiendo…" : "Generar propuestas nuevas"}
-      </button>
 
-      <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 14 }}>
-        {/* H01 — la IA trabajando se ve en el lugar donde aparecerán las piezas */}
-        {generating && (
-          <div role="status" style={{ background: "var(--tem-surface)", borderRadius: 22, padding: 16, boxShadow: "var(--sh-card)", border: "1.5px dashed var(--tem-orange)", display: "flex", alignItems: "center", gap: 12 }}>
-            <span className="spinner" aria-hidden="true" />
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>Redactando 5 propuestas nuevas…</div>
-              <div style={{ fontSize: 12, color: "var(--tem-handle)" }}>Suele tardar entre 10 y 20 segundos.</div>
-            </div>
+      {/* resumen del tablero */}
+      <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+        {STAGES.map((st) => (
+          <div key={st} title={STAGE_HELP[st]} style={{ background: "var(--tem-surface)", borderRadius: 14, padding: "10px 12px", boxShadow: "var(--sh-card)" }}>
+            {loading ? (
+              <div className="skeleton" style={{ height: 22, width: 30 }} />
+            ) : (
+              <div style={{ fontSize: 20, fontWeight: 700, color: count(st) ? "var(--tem-ink)" : "var(--tem-handle)" }}>{count(st)}</div>
+            )}
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--tem-handle)" }}>{STAGE_LABEL[st]}</div>
           </div>
-        )}
+        ))}
+      </div>
+
+      {/* idea rápida (H07: Enter guarda) */}
+      <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
+        <input
+          value={line}
+          onChange={(e) => setLine(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addIdea()}
+          placeholder="Anota una idea · *palabra clave*"
+          aria-label="Idea"
+          className="tem-textarea"
+          style={{ ...INPUT, background: "var(--tem-surface)", flex: 1 }}
+        />
+        <button className="press-sm" onClick={addIdea} disabled={!line.trim()} style={{ ...BTN_PRIMARY, padding: "10px 14px", fontSize: 13 }}>
+          Anotar
+        </button>
+      </div>
+      <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+        <input
+          value={tema}
+          onChange={(e) => setTema(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && !generating && actions.generateIdeas(tema)}
+          placeholder="Tema de la semana"
+          aria-label="Tema de la semana"
+          disabled={generating}
+          className="tem-textarea"
+          style={{ ...INPUT, background: "var(--tem-surface)", flex: 1 }}
+        />
+        <button className="press-sm" onClick={() => actions.generateIdeas(tema)} disabled={generating} style={{ ...BTN_SECONDARY, padding: "10px 12px", fontSize: 13 }}>
+          {generating ? <span className="spinner spinner-sm" aria-hidden="true" /> : null}
+          {generating ? "Pensando…" : "Generar ideas"}
+        </button>
+      </div>
+
+      {/* qué toca hoy */}
+      <div style={{ marginTop: 22, fontWeight: 700, fontSize: 17 }}>Qué toca hoy</div>
+      <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 14 }}>
         {loading ? (
-          [0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 170, borderRadius: 22 }} aria-busy="true" />)
-        ) : pending.length === 0 && !generating ? (
-          <div style={{ background: "var(--tem-surface)", borderRadius: 22, padding: "30px 20px", textAlign: "center", boxShadow: "var(--sh-card)" }}>
-            <div style={{ fontWeight: 700, fontSize: 18 }}>Todo revisado</div>
+          [0, 1].map((i) => <div key={i} className="skeleton" style={{ height: 140, borderRadius: 18 }} aria-busy="true" />)
+        ) : todayList.length === 0 ? (
+          <div style={{ background: "var(--tem-surface)", borderRadius: 22, padding: "26px 20px", textAlign: "center", boxShadow: "var(--sh-card)" }}>
+            <div style={{ fontWeight: 700, fontSize: 17 }}>Nada urgente</div>
             <div style={{ marginTop: 6, fontWeight: 500, fontSize: 13, color: "var(--tem-handle)", lineHeight: 1.5 }}>
-              Aquí aparecen las propuestas del asistente. Pídele una tanda nueva con el botón de arriba.
+              Aquí aparece lo que sale hoy, lo que hay que grabar y lo que está por editar. Anota una idea o pide ideas al asistente para empezar.
             </div>
           </div>
         ) : (
-          pending.map((p) => <HomeCard key={p.id} p={p} />)
+          todayList.map((g) => (
+            <div key={g.title}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--tem-handle)", marginBottom: 8 }}>{g.title} · {g.items.length}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {g.items.map((p) => <PieceCard key={p.id} p={p} showStage />)}
+              </div>
+            </div>
+          ))
         )}
-      </div>
-    </div>
-  );
-}
-
-function HomeCard({ p }: { p: Proposal }) {
-  const { actions } = useStore();
-  const title = p.line.pre + p.line.key + p.line.post;
-  return (
-    <div style={{ background: "var(--tem-surface)", borderRadius: 22, padding: 16, boxShadow: "var(--sh-card)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-        {p.platforms.map((pl) => (
-          <span key={pl} style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", border: "1.5px solid var(--tem-ink)", borderRadius: 999 }}>
-            {PLATFORM_LABEL[pl]}
-          </span>
-        ))}
-        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, letterSpacing: ".12em", color: "var(--tem-orange)" }}>
-          {p.eyebrow}
-        </span>
-      </div>
-      <div style={{ marginTop: 12, fontWeight: 700, fontSize: 19, letterSpacing: "-.01em", lineHeight: 1.15 }}>{title}</div>
-      <div style={{ marginTop: 6, fontWeight: 500, fontSize: 12, lineHeight: 1.45, color: "var(--tem-handle)" }}>{p.caption}</div>
-      <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
-        <button
-          className="press-sm"
-          onClick={() => actions.setStage(p.id, "listo")}
-          style={{ all: "unset", cursor: "pointer", flex: 1, textAlign: "center", fontSize: 13, fontWeight: 600, padding: 11, borderRadius: 12, background: "var(--tem-orange)", color: "#fff" }}
-        >
-          Aprobar
-        </button>
-        <button
-          className="press-sm"
-          onClick={() => actions.openWork(p.id)}
-          style={{ all: "unset", cursor: "pointer", fontSize: 13, fontWeight: 600, padding: "11px 16px", borderRadius: 12, border: "1.5px solid var(--tem-ink)" }}
-        >
-          Editar
-        </button>
-        <button
-          className="press-sm"
-          onClick={() => actions.reject(p.id)}
-          aria-label="Descartar propuesta"
-          title="Quitar de la bandeja (puedes deshacerlo)"
-          style={{ all: "unset", cursor: "pointer", fontSize: 13, fontWeight: 600, padding: "11px 14px", borderRadius: 12, border: "1.5px solid var(--tem-border-muted)", color: "var(--tem-handle)" }}
-        >
-          Descartar
-        </button>
       </div>
     </div>
   );

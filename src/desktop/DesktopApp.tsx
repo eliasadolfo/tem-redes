@@ -8,6 +8,7 @@ import Library from "./Library";
 import Metrics from "./Metrics";
 import Newsletter from "./Newsletter";
 import Profile from "./Profile";
+import RecordSession from "../components/RecordSession";
 
 export default function DesktopApp() {
   const { view, work } = useStore();
@@ -16,7 +17,7 @@ export default function DesktopApp() {
   if (work) content = <Copilot />;
   else if (view === "tablero") content = <Tablero />;
   else if (view === "ideas") content = <Ideas />;
-  else if (view === "grabar") content = <Tablero />; // sesión de grabación: fase 5
+  else if (view === "grabar") content = <RecordSession />;
   else if (view === "calendar") content = <Calendar />;
   else if (view === "library") content = <Library />;
   else if (view === "metrics") content = <Metrics />;

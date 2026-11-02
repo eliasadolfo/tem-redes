@@ -5,6 +5,7 @@ import { VARIANTS, HANDLE } from "../data/mock";
 import Card916 from "../components/Card916";
 import { downloadPiecePng } from "../lib/exportCard";
 import { AdvanceBar, StageHeader, StageSections } from "../components/stages/StageFlow";
+import Teleprompter from "../components/Teleprompter";
 
 const VARIANT_NAMES = ["Blanca", "Negra", "Azul"];
 
@@ -14,6 +15,7 @@ export default function EditSheet() {
   const { actions } = s;
   const work = s.proposals.find((p) => p.id === s.work);
   const [exporting, setExporting] = useState(false);
+  const [tele, setTele] = useState(false);
 
   if (!work) return null;
 
@@ -99,7 +101,8 @@ export default function EditSheet() {
           </div>
         </div>
 
-        <StageSections p={work} />
+        <StageSections p={work} slots={{ onTeleprompter: () => setTele(true) }} />
+        {tele && <Teleprompter p={work} onClose={() => setTele(false)} />}
 
         <button
           className="press-sm"

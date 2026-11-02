@@ -1,13 +1,13 @@
 import { useStore } from "../store";
 import { DAY, DAY_NAMES_FULL, noon, weekRangeLabel } from "../lib/dates";
-import { platformsStr } from "../lib/platforms";
-import type { Proposal } from "../types";
+import PieceCard from "../components/PieceCard";
 
+/** Semana móvil: solo lo programado (Listo) y lo publicado. */
 export default function MobileWeek() {
   const s = useStore();
   const { actions } = s;
   const monday = noon(s.calWeekStart);
-  const visible = s.proposals.filter((p) => p.status !== "rejected");
+  const visible = s.proposals.filter((p) => p.status !== "rejected" && (p.stage === "listo" || p.stage === "publicado"));
 
   const arrow: React.CSSProperties = {
     all: "unset", cursor: "pointer", width: 38, height: 38, flex: "none", borderRadius: 12,
@@ -28,6 +28,9 @@ export default function MobileWeek() {
           <span style={{ width: 0, height: 0, borderLeft: "8px solid var(--tem-ink)", borderTop: "6px solid transparent", borderBottom: "6px solid transparent" }} />
         </button>
       </div>
+      <div style={{ marginTop: 6, fontSize: 12, fontWeight: 500, color: "var(--tem-handle)" }}>
+        Solo lo que está en Listo o Publicado.
+      </div>
 
       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 18 }}>
         {DAY_NAMES_FULL.map((name, i) => {
@@ -39,12 +42,14 @@ export default function MobileWeek() {
                 {name} {d.getDate()}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                {items.length === 0 ? (
+                {s.loading ? (
+                  <div className="skeleton" style={{ height: 70 }} aria-busy="true" />
+                ) : items.length === 0 ? (
                   <div style={{ border: "1.5px dashed var(--tem-border-empty)", borderRadius: 16, padding: 14, fontWeight: 500, fontSize: 12, color: "#B8B8B8" }}>
-                    Día libre · genera propuestas desde Inicio
+                    Día libre · pasa una pieza a Listo para verla aquí
                   </div>
                 ) : (
-                  items.map((p) => <WeekCard key={p.id} p={p} onOpen={() => actions.openWork(p.id)} />)
+                  items.map((p) => <PieceCard key={p.id} p={p} showStage />)
                 )}
               </div>
             </div>
@@ -52,35 +57,5 @@ export default function MobileWeek() {
         })}
       </div>
     </div>
-  );
-}
-
-function WeekCard({ p, onOpen }: { p: Proposal; onOpen: () => void }) {
-  const title = p.line.pre + p.line.key + p.line.post;
-  const platStr = platformsStr(p.platforms);
-
-  if (p.status === "scheduled") {
-    return (
-      <button className="press-sm" onClick={onOpen} style={{ all: "unset", cursor: "pointer", display: "block", background: "var(--tem-ink)", borderRadius: 16, padding: "14px 15px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,.55)" }}>
-          <span>{platStr}</span>
-          <span>{p.time}</span>
-        </div>
-        <div style={{ marginTop: 8, fontSize: 9, fontWeight: 700, letterSpacing: ".12em", color: "var(--tem-orange)" }}>{p.eyebrow}</div>
-        <div style={{ marginTop: 4, fontSize: 15, fontWeight: 700, color: "#fff", letterSpacing: "-.01em" }}>{title}</div>
-      </button>
-    );
-  }
-
-  return (
-    <button className="press-sm" onClick={onOpen} style={{ all: "unset", cursor: "pointer", display: "block", background: "var(--tem-surface)", border: "1.5px dashed var(--tem-orange)", borderRadius: 16, padding: "14px 15px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-        <span style={{ width: 6, height: 6, borderRadius: 999, background: "var(--tem-orange)" }} />
-        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".12em", color: "var(--tem-orange)" }}>PROPUESTA</span>
-        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, color: "var(--tem-handle)" }}>{platStr}</span>
-      </div>
-      <div style={{ marginTop: 8, fontSize: 9, fontWeight: 700, letterSpacing: ".12em", color: "var(--tem-orange)", opacity: 0.7 }}>{p.eyebrow}</div>
-      <div style={{ marginTop: 4, fontSize: 15, fontWeight: 700, color: "var(--tem-ink)", letterSpacing: "-.01em" }}>{title}</div>
-    </button>
   );
 }
