@@ -25,7 +25,7 @@ export default function Metrics() {
   return (
     <div style={{ padding: "32px 40px", maxWidth: 900 }}>
       <div className="eyebrow">Rendimiento</div>
-      <h1 style={{ margin: "6px 0 20px", fontWeight: 700, fontSize: 30, letterSpacing: "-.02em" }}>Métricas</h1>
+      <h1 style={{ margin: "6px 0 20px", fontWeight: 600, fontSize: 30, letterSpacing: "-.02em" }}>Métricas</h1>
 
       {/* fila de rango */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", marginBottom: 18 }}>
@@ -35,11 +35,11 @@ export default function Metrics() {
             onClick={actions.togglePicker}
             style={{
               display: "flex", alignItems: "center", gap: 8, background: "var(--tem-surface)",
-              border: "1.5px solid var(--tem-ink)", borderRadius: 12, padding: "10px 16px", cursor: "pointer",
+              border: "1px solid var(--tem-border)", borderRadius: 12, padding: "10px 16px", cursor: "pointer",
             }}
           >
-            <span style={{ fontSize: 14, fontWeight: 600 }}>{rangeLabel}</span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--tem-handle)" }}>elegir</span>
+            <span style={{ fontSize: 14, fontWeight: 500 }}>{rangeLabel}</span>
+            <span style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)" }}>elegir</span>
           </button>
           {s.pickerOpen && (
             <CalendarPopover
@@ -62,7 +62,7 @@ export default function Metrics() {
         </div>
 
         {/* toggle días/meses */}
-        <div style={{ display: "flex", background: "var(--tem-surface)", border: "1.5px solid var(--tem-ink)", borderRadius: 12, padding: 3 }}>
+        <div style={{ display: "flex", background: "var(--tem-surface)", border: "1px solid var(--tem-border)", borderRadius: 12, padding: 3 }}>
           {(["días", "meses"] as Grain[]).map((g) => {
             const active = s.grain === g;
             return (
@@ -71,7 +71,7 @@ export default function Metrics() {
                 className="press"
                 onClick={() => actions.setGrain(g)}
                 style={{
-                  all: "unset", cursor: "pointer", fontSize: 13, fontWeight: 600, padding: "6px 14px", borderRadius: 9,
+                  all: "unset", cursor: "pointer", fontSize: 13, fontWeight: 500, padding: "6px 14px", borderRadius: 9,
                   background: active ? "var(--tem-ink)" : "transparent", color: active ? "#fff" : "var(--tem-ink)",
                 }}
               >
@@ -89,7 +89,7 @@ export default function Metrics() {
               className="preset"
               onClick={() => (p.days ? actions.presetDays(p.days) : actions.presetMonths(p.months!))}
               style={{
-                all: "unset", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--tem-handle)",
+                all: "unset", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "var(--tem-handle)",
               }}
             >
               {p.label}
@@ -100,7 +100,7 @@ export default function Metrics() {
 
       {/* fila RED: */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".14em", color: "var(--tem-handle)", marginRight: 4 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: ".14em", color: "var(--tem-handle)", marginRight: 4 }}>
           RED:
         </span>
         {NETS.map((n) => {
@@ -111,8 +111,8 @@ export default function Metrics() {
               className="press"
               onClick={() => actions.setNet(n)}
               style={{
-                all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: "7px 14px", borderRadius: 999,
-                border: "1.5px solid var(--tem-ink)",
+                all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 500, padding: "7px 14px", borderRadius: 999,
+                border: "1px solid var(--tem-border)",
                 background: active ? "var(--tem-ink)" : "var(--tem-surface)", color: active ? "#fff" : "var(--tem-ink)",
               }}
             >
@@ -126,16 +126,16 @@ export default function Metrics() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 20 }}>
         {m.stats.map((st) => (
           <div key={st.label} style={{ background: "var(--tem-surface)", borderRadius: 18, padding: 18, boxShadow: "var(--sh-card)" }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--tem-handle)" }}>{st.label}</div>
-            <div className="num" style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-.03em", margin: "6px 0 2px" }}>{st.value}</div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--tem-orange)" }}>{st.delta}</div>
+            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)" }}>{st.label}</div>
+            <div className="num" style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-.03em", margin: "6px 0 2px" }}>{st.value}</div>
+            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-orange)" }}>{st.delta}</div>
           </div>
         ))}
       </div>
 
       {/* evolución del alcance */}
       <div style={{ background: "var(--tem-surface)", borderRadius: 20, padding: 24, boxShadow: "var(--sh-card)", marginBottom: 20 }}>
-        <div style={{ fontSize: 16, fontWeight: 700 }}>Evolución del alcance</div>
+        <div style={{ fontSize: 16, fontWeight: 600 }}>Evolución del alcance</div>
         <div style={{ fontSize: 13, color: "var(--tem-handle)", margin: "4px 0 18px" }}>
           {m.netLabel} · alcance {m.chartUnit} · {rangeLabel}
         </div>
@@ -148,7 +148,7 @@ export default function Metrics() {
                   background: b.max ? "var(--tem-orange)" : "rgba(244,124,60,0.5)",
                 }}
               />
-              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--tem-handle)", marginTop: 6, whiteSpace: "nowrap" }}>
+              <div style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-handle)", marginTop: 6, whiteSpace: "nowrap" }}>
                 {b.label}
               </div>
             </div>
@@ -157,7 +157,7 @@ export default function Metrics() {
       </div>
 
       {/* por red social */}
-      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Por red social</div>
+      <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Por red social</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
         {m.networkStats.map((ns) => (
           <button
@@ -170,10 +170,10 @@ export default function Metrics() {
               border: `2px solid ${ns.selected ? "var(--tem-orange)" : "transparent"}`,
             }}
           >
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--tem-handle)" }}>{ns.net}</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: "var(--tem-handle)" }}>{ns.net}</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8, margin: "6px 0 2px" }}>
-              <span className="num" style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-.02em" }}>{ns.reach}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--tem-orange)" }}>{ns.delta}</span>
+              <span className="num" style={{ fontSize: 28, fontWeight: 600, letterSpacing: "-.02em" }}>{ns.reach}</span>
+              <span style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-orange)" }}>{ns.delta}</span>
             </div>
             <div style={{ fontSize: 12, color: "var(--tem-handle)" }}>{ns.foll} seguidores</div>
           </button>
@@ -182,13 +182,13 @@ export default function Metrics() {
 
       {/* temas que más interesan */}
       <div style={{ background: "var(--tem-surface)", borderRadius: 20, padding: 24, boxShadow: "var(--sh-card)" }}>
-        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Temas que más interesan</div>
+        <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Temas que más interesan</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {THEMES.map((t) => (
             <div key={t.name}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                <span style={{ fontSize: 14, fontWeight: 600 }}>{t.name}</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--tem-handle)" }}>
+                <span style={{ fontSize: 14, fontWeight: 500 }}>{t.name}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--tem-handle)" }}>
                   {t.pct} · {t.note}
                 </span>
               </div>

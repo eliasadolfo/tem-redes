@@ -79,14 +79,14 @@ export default function Copilot() {
           className="press"
           onClick={actions.closeWork}
           title="Volver al tablero (Esc). Los cambios ya están guardados."
-          style={{ all: "unset", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--tem-handle)" }}
+          style={{ all: "unset", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "var(--tem-handle)" }}
         >
           ← Volver
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
           <span style={{ width: 10, height: 10, borderRadius: 999, background: "var(--tem-orange)" }} />
-          <span style={{ fontSize: 16, fontWeight: 700 }}>Asistente</span>
-          <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: "var(--tem-handle)" }}>{STAGE_LABEL[work.stage]}</span>
+          <span style={{ fontSize: 16, fontWeight: 600 }}>Asistente</span>
+          <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 500, color: "var(--tem-handle)" }}>{STAGE_LABEL[work.stage]}</span>
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, paddingRight: 2 }}>
@@ -99,14 +99,14 @@ export default function Copilot() {
                 background: m.role === "ai" ? "var(--tem-bg)" : "var(--tem-ink)",
                 color: m.role === "ai" ? "var(--tem-ink)" : "#fff",
                 borderRadius: m.role === "ai" ? "15px 15px 15px 4px" : "15px 15px 4px 15px",
-                padding: "11px 13px", fontSize: 13, fontWeight: 500, lineHeight: 1.45, whiteSpace: "pre-wrap",
+                padding: "11px 13px", fontSize: 13, fontWeight: 400, lineHeight: 1.45, whiteSpace: "pre-wrap",
               }}
             >
               {m.text}
             </div>
           ))}
           {s.chatBusy && (
-            <div style={{ alignSelf: "flex-start", background: "var(--tem-bg)", borderRadius: "15px 15px 15px 4px", padding: "11px 13px", fontSize: 13, fontWeight: 500, color: "var(--tem-handle)" }}>
+            <div style={{ alignSelf: "flex-start", background: "var(--tem-bg)", borderRadius: "15px 15px 15px 4px", padding: "11px 13px", fontSize: 13, fontWeight: 400, color: "var(--tem-handle)" }}>
               Pensando…
             </div>
           )}
@@ -119,7 +119,7 @@ export default function Copilot() {
               className="press"
               onClick={() => actions.sendChat(c)}
               disabled={s.chatBusy}
-              style={{ all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 500, padding: "7px 11px", border: "1.5px solid var(--tem-ink)", borderRadius: 999 }}
+              style={{ all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 400, padding: "7px 11px", border: "1px solid var(--tem-border)", borderRadius: 999 }}
             >
               {c}
             </button>
@@ -135,7 +135,7 @@ export default function Copilot() {
           <div style={{ minWidth: 0, flex: 1 }}>
             <StageHeader p={work} />
           </div>
-          <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)", textAlign: "right", flexShrink: 0, paddingTop: 4 }}>
+          <div style={{ fontSize: 12, fontWeight: 400, color: "var(--tem-handle)", textAlign: "right", flexShrink: 0, paddingTop: 4 }}>
             {work.type} · {platformsStr(work.platforms)}
           </div>
         </div>
@@ -186,8 +186,8 @@ export default function Copilot() {
               }}
             />
           ))}
-          <span style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)", marginLeft: 4 }}>
-            <b style={{ color: "var(--tem-ink)", fontWeight: 600 }}>{VARIANT_NAMES[s.variant]}</b>
+          <span style={{ fontSize: 12, fontWeight: 400, color: "var(--tem-handle)", marginLeft: 4 }}>
+            <b style={{ color: "var(--tem-ink)", fontWeight: 500 }}>{VARIANT_NAMES[s.variant]}</b>
           </span>
         </div>
 
@@ -196,8 +196,8 @@ export default function Copilot() {
           onClick={() => void exportPng()}
           disabled={exporting}
           style={{
-            all: "unset", cursor: "pointer", textAlign: "center", fontSize: 13, fontWeight: 600, width: "100%", boxSizing: "border-box",
-            color: "var(--tem-ink)", border: "1.5px solid var(--tem-ink)", padding: 11, borderRadius: 12,
+            all: "unset", cursor: "pointer", textAlign: "center", fontSize: 13, fontWeight: 500, width: "100%", boxSizing: "border-box",
+            color: "var(--tem-ink)", border: "1px solid var(--tem-border)", padding: 11, borderRadius: 12,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}
         >
@@ -205,13 +205,13 @@ export default function Copilot() {
           {exporting ? "Creando imagen…" : isVideo ? "Descargar miniatura" : "Descargar imagen"}
         </button>
 
-        <div style={{ width: "100%", fontSize: 12, fontWeight: 500, color: "var(--tem-handle)", lineHeight: 1.5 }}>
+        <div style={{ width: "100%", fontSize: 12, fontWeight: 400, color: "var(--tem-handle)", lineHeight: 1.5 }}>
           {work.caption || "Sin caption todavía: se escribe en Editar."}
         </div>
         {work.tags.length > 0 && (
           <div style={{ width: "100%", display: "flex", flexWrap: "wrap", gap: 6 }}>
             {work.tags.map((t) => (
-              <span key={t} style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-orange)", background: "var(--tem-bg)", padding: "4px 9px", borderRadius: 999 }}>{t}</span>
+              <span key={t} style={{ fontSize: 11, fontWeight: 400, color: "var(--tem-orange)", background: "var(--tem-bg)", padding: "4px 9px", borderRadius: 999 }}>{t}</span>
             ))}
           </div>
         )}
@@ -221,8 +221,8 @@ export default function Copilot() {
           onClick={() => actions.reject(work.id)}
           title="Quitar esta pieza de la línea (se puede deshacer)"
           style={{
-            all: "unset", cursor: "pointer", marginTop: "auto", fontSize: 12, fontWeight: 600, color: "var(--tem-handle)",
-            border: "1.5px solid var(--tem-border-muted)", padding: "9px 14px", borderRadius: 12,
+            all: "unset", cursor: "pointer", marginTop: "auto", fontSize: 12, fontWeight: 500, color: "var(--tem-handle)",
+            border: "1px solid var(--tem-border)", padding: "9px 14px", borderRadius: 12,
           }}
         >
           Descartar pieza
@@ -249,12 +249,12 @@ function ChatInput({
         onKeyDown={onKey}
         disabled={busy}
         placeholder={busy ? "Aplicando el ajuste…" : "Pide un ajuste…"}
-        style={{ flex: 1, minWidth: 0, border: "none", background: "transparent", outline: "none", fontWeight: 500, fontSize: 13, color: "var(--tem-ink)" }}
+        style={{ flex: 1, minWidth: 0, border: "none", background: "transparent", outline: "none", fontWeight: 400, fontSize: 13, color: "var(--tem-ink)" }}
       />
       <button
         className="press"
         onClick={onSend}
-        style={{ all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 600, background: "var(--tem-orange)", color: "#fff", padding: "8px 14px", borderRadius: 10 }}
+        style={{ all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 500, background: "var(--tem-ink)", color: "#fff", padding: "8px 14px", borderRadius: 999 }}
       >
         Enviar
       </button>
@@ -284,7 +284,7 @@ function VideoPreview({ cur, work }: { cur: { bg: string; fg: string }; work: Pr
             <span style={{ width: 0, height: 0, borderLeft: "10px solid #fff", borderTop: "6px solid transparent", borderBottom: "6px solid transparent", marginLeft: 2 }} />
           </div>
           {work.duration && (
-            <span style={{ fontWeight: 600, fontSize: 11, background: "rgba(17,17,17,.7)", color: "#fff", padding: "2px 7px", borderRadius: 6, fontFamily: "var(--font-ui)" }}>
+            <span style={{ fontWeight: 500, fontSize: 11, background: "rgba(17,17,17,.7)", color: "#fff", padding: "2px 7px", borderRadius: 6, fontFamily: "var(--font-ui)" }}>
               {work.duration}
             </span>
           )}

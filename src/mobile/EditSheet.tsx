@@ -50,7 +50,7 @@ export default function EditSheet() {
           title="Volver. Los cambios ya están guardados."
           style={{
             all: "unset", cursor: "pointer", width: 38, height: 38, flex: "none", borderRadius: 12,
-            background: "var(--tem-surface)", border: "1.5px solid var(--tem-ink)", display: "grid", placeItems: "center",
+            background: "var(--tem-surface)", border: "1px solid var(--tem-border)", display: "grid", placeItems: "center",
           }}
         >
           <ArrowLeft size={18} strokeWidth={2.4} />
@@ -85,14 +85,14 @@ export default function EditSheet() {
                 />
               ))}
             </div>
-            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)" }}>Estilo: <b style={{ color: "var(--tem-ink)", fontWeight: 600 }}>{VARIANT_NAMES[s.variant]}</b></div>
+            <div style={{ fontSize: 12, fontWeight: 400, color: "var(--tem-handle)" }}>Estilo: <b style={{ color: "var(--tem-ink)", fontWeight: 500 }}>{VARIANT_NAMES[s.variant]}</b></div>
             <button
               className="press-sm"
               onClick={() => void exportPng()}
               disabled={exporting}
               style={{
-                all: "unset", cursor: "pointer", textAlign: "center", fontSize: 12, fontWeight: 600, color: "var(--tem-ink)",
-                border: "1.5px solid var(--tem-ink)", padding: "8px 12px", borderRadius: 10, display: "inline-flex", alignItems: "center", gap: 6,
+                all: "unset", cursor: "pointer", textAlign: "center", fontSize: 12, fontWeight: 500, color: "var(--tem-ink)",
+                border: "1px solid var(--tem-border)", padding: "8px 12px", borderRadius: 10, display: "inline-flex", alignItems: "center", gap: 6,
               }}
             >
               {exporting && <span className="spinner spinner-sm" aria-hidden="true" />}
@@ -108,7 +108,7 @@ export default function EditSheet() {
           className="press-sm"
           onClick={() => actions.reject(work.id)}
           title="Quitar esta pieza (puedes deshacerlo)"
-          style={{ all: "unset", cursor: "pointer", alignSelf: "center", fontSize: 12, fontWeight: 600, color: "var(--tem-handle)", border: "1.5px solid var(--tem-border-muted)", padding: "9px 14px", borderRadius: 12 }}
+          style={{ all: "unset", cursor: "pointer", alignSelf: "center", fontSize: 12, fontWeight: 500, color: "var(--tem-handle)", border: "1px solid var(--tem-border)", padding: "9px 14px", borderRadius: 12 }}
         >
           Descartar pieza
         </button>

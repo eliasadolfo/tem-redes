@@ -29,17 +29,17 @@ img {
 
 /* --- Press spring: requisito del cliente para TODOS los botones ------------ */
 .press {
-  transition: transform 0.16s var(--ease-spring), opacity 0.16s ease;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background 0.15s ease-out, box-shadow 0.15s ease-out;
   cursor: pointer;
 }
 .press:hover {
-  opacity: 0.9;
+  opacity: 0.92;
 }
 .press:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 .press-sm:active {
-  transform: scale(0.9);
+  transform: scale(0.96);
 }
 .press:disabled {
   opacity: 0.4;
@@ -48,8 +48,8 @@ img {
 
 /* --- Focus visible: outline naranja, sin glow ----------------------------- */
 :focus-visible {
-  outline: 2px solid var(--tem-orange);
-  outline-offset: 4px;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(244, 124, 60, 0.35);
 }
 
 /* --- Textarea de caption: focus naranja + fondo blanco -------------------- */
@@ -60,8 +60,7 @@ img {
 
 /* --- Botón secundario que invierte a negro en hover ----------------------- */
 .invert-hover:hover {
-  background: var(--tem-ink) !important;
-  color: #fff !important;
+  background: rgba(0, 0, 0, 0.04) !important;
   opacity: 1 !important;
 }
 
@@ -81,11 +80,21 @@ img {
 
 /* --- Eyebrow reutilizable -------------------------------------------------- */
 .eyebrow {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--tem-orange);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--tem-ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tem-orange);
+  flex: none;
 }
 
 /* --- Scrollbars discretos -------------------------------------------------- */

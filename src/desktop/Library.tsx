@@ -9,7 +9,7 @@ export default function Library() {
   return (
     <div style={{ padding: "32px 40px" }}>
       <div className="eyebrow">Biblioteca</div>
-      <h1 style={{ margin: "6px 0 20px", fontWeight: 700, fontSize: 30, letterSpacing: "-.02em" }}>
+      <h1 style={{ margin: "6px 0 20px", fontWeight: 600, fontSize: 30, letterSpacing: "-.02em" }}>
         Tu contenido
       </h1>
 
@@ -23,8 +23,8 @@ export default function Library() {
               className="press"
               onClick={() => actions.setLib(f)}
               style={{
-                all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: "7px 14px",
-                borderRadius: 999, border: "1.5px solid var(--tem-ink)",
+                all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 500, padding: "7px 14px",
+                borderRadius: 999, border: "1px solid var(--tem-border)",
                 background: active ? "var(--tem-ink)" : "var(--tem-surface)",
                 color: active ? "#fff" : "var(--tem-ink)",
               }}
@@ -54,8 +54,8 @@ export default function Library() {
               style={{ boxShadow: "var(--sh-card)" }}
             />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 2px" }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--tem-handle)" }}>{g.platStr}</span>
-              <span style={{ fontSize: 12, fontWeight: 700 }}>{g.reach}</span>
+              <span style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-handle)" }}>{g.platStr}</span>
+              <span style={{ fontSize: 12, fontWeight: 600 }}>{g.reach}</span>
             </div>
           </div>
         ))}

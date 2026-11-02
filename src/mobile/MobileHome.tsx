@@ -39,13 +39,13 @@ export default function MobileHome() {
     <div style={{ padding: "6px 18px 0" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <img src={logoBlack} alt="TEM" style={{ height: 26, width: "auto", objectFit: "contain" }} />
-        <div style={{ width: 38, height: 38, borderRadius: 999, background: "var(--tem-ink)", color: "#fff", display: "grid", placeItems: "center", fontWeight: 700, fontSize: 13 }}>
+        <div style={{ width: 38, height: 38, borderRadius: 999, background: "var(--tem-ink)", color: "#fff", display: "grid", placeItems: "center", fontWeight: 600, fontSize: 13 }}>
           EA
         </div>
       </div>
 
       <div className="eyebrow" style={{ marginTop: 20 }}>Línea de producción</div>
-      <div style={{ marginTop: 6, fontWeight: 700, fontSize: 26, letterSpacing: "-.02em", lineHeight: 1.08 }}>
+      <div style={{ marginTop: 6, fontWeight: 600, fontSize: 26, letterSpacing: "-.02em", lineHeight: 1.08 }}>
         {active.length === 1 ? "1 pieza en curso" : `${active.length} piezas en curso`}
       </div>
 
@@ -56,9 +56,9 @@ export default function MobileHome() {
             {loading ? (
               <div className="skeleton" style={{ height: 22, width: 30 }} />
             ) : (
-              <div style={{ fontSize: 20, fontWeight: 700, color: count(st) ? "var(--tem-ink)" : "var(--tem-handle)" }}>{count(st)}</div>
+              <div style={{ fontSize: 20, fontWeight: 600, color: count(st) ? "var(--tem-ink)" : "var(--tem-handle)" }}>{count(st)}</div>
             )}
-            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--tem-handle)" }}>{STAGE_LABEL[st]}</div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-handle)" }}>{STAGE_LABEL[st]}</div>
           </div>
         ))}
       </div>
@@ -96,21 +96,21 @@ export default function MobileHome() {
       </div>
 
       {/* qué toca hoy */}
-      <div style={{ marginTop: 22, fontWeight: 700, fontSize: 17 }}>Qué toca hoy</div>
+      <div style={{ marginTop: 22, fontWeight: 600, fontSize: 17 }}>Qué toca hoy</div>
       <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 14 }}>
         {loading ? (
           [0, 1].map((i) => <div key={i} className="skeleton" style={{ height: 140, borderRadius: 18 }} aria-busy="true" />)
         ) : todayList.length === 0 ? (
           <div style={{ background: "var(--tem-surface)", borderRadius: 22, padding: "26px 20px", textAlign: "center", boxShadow: "var(--sh-card)" }}>
-            <div style={{ fontWeight: 700, fontSize: 17 }}>Nada urgente</div>
-            <div style={{ marginTop: 6, fontWeight: 500, fontSize: 13, color: "var(--tem-handle)", lineHeight: 1.5 }}>
+            <div style={{ fontWeight: 600, fontSize: 17 }}>Nada urgente</div>
+            <div style={{ marginTop: 6, fontWeight: 400, fontSize: 13, color: "var(--tem-handle)", lineHeight: 1.5 }}>
               Aquí aparece lo que sale hoy, lo que hay que grabar y lo que está por editar. Anota una idea o pide ideas al asistente para empezar.
             </div>
           </div>
         ) : (
           todayList.map((g) => (
             <div key={g.title}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--tem-handle)", marginBottom: 8 }}>{g.title} · {g.items.length}</div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)", marginBottom: 8 }}>{g.title} · {g.items.length}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {g.items.map((p) => <PieceCard key={p.id} p={p} showStage />)}
               </div>

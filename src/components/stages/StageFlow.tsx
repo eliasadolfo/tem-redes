@@ -13,7 +13,7 @@ export function StageHeader({ p, compact = false }: { p: Proposal; compact?: boo
     <div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
         <span className="eyebrow">Etapa {i + 1} de {STAGES.length}</span>
-        <span style={{ fontSize: compact ? 16 : 20, fontWeight: 700, letterSpacing: "-.01em" }}>{STAGE_LABEL[p.stage]}</span>
+        <span style={{ fontSize: compact ? 16 : 20, fontWeight: 600, letterSpacing: "-.01em" }}>{STAGE_LABEL[p.stage]}</span>
       </div>
       <div style={{ display: "flex", gap: 4, marginTop: 8 }} aria-hidden="true">
         {STAGES.map((st, k) => (
@@ -72,16 +72,16 @@ export function StageSections({ p, slots }: { p: Proposal; slots?: { onTelepromp
             >
               <span
                 style={{
-                  width: 22, height: 22, borderRadius: 999, flex: "none", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 700,
+                  width: 22, height: 22, borderRadius: 999, flex: "none", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 600,
                   background: past ? "var(--tem-ink)" : isCurrent ? "var(--tem-orange)" : "var(--tem-border-muted)",
                   color: past || isCurrent ? "#fff" : "var(--tem-handle)",
                 }}
               >
                 {k + 1}
               </span>
-              <span style={{ fontSize: 14, fontWeight: 700 }}>{STAGE_LABEL[st]}</span>
+              <span style={{ fontSize: 14, fontWeight: 600 }}>{STAGE_LABEL[st]}</span>
               {!isOpen && (
-                <span style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+                <span style={{ fontSize: 12, fontWeight: 400, color: "var(--tem-handle)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
                   {stageSummary(p, st)}
                 </span>
               )}
@@ -90,7 +90,7 @@ export function StageSections({ p, slots }: { p: Proposal; slots?: { onTelepromp
             {isOpen && (
               <div style={{ padding: "2px 16px 16px" }}>
                 {!isCurrent && (
-                  <div style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-handle)", marginBottom: 12, lineHeight: 1.4 }}>
+                  <div style={{ fontSize: 11, fontWeight: 400, color: "var(--tem-handle)", marginBottom: 12, lineHeight: 1.4 }}>
                     {STAGE_HELP[st]}
                   </div>
                 )}
@@ -127,7 +127,7 @@ export function AdvanceBar({ p, stacked = false }: { p: Proposal; stacked?: bool
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {next && (
-        <div style={{ fontSize: 11, fontWeight: 500, lineHeight: 1.4, color: missing ? "var(--tem-orange)" : "var(--tem-handle)" }}>
+        <div style={{ fontSize: 11, fontWeight: 400, lineHeight: 1.4, color: missing ? "var(--tem-orange)" : "var(--tem-handle)" }}>
           {missing ?? `Listo para pasar a ${STAGE_LABEL[next]}: ${STAGE_REQUIREMENT[next]}.`}
         </div>
       )}
@@ -138,8 +138,8 @@ export function AdvanceBar({ p, stacked = false }: { p: Proposal; stacked?: bool
             onClick={onPrimary}
             disabled={Boolean(missing)}
             style={{
-              all: "unset", cursor: "pointer", flex: 1, textAlign: "center", fontSize: 14, fontWeight: 600, boxSizing: "border-box",
-              background: "var(--tem-orange)", color: "#fff", padding: 13, borderRadius: 12,
+              all: "unset", cursor: "pointer", flex: 1, textAlign: "center", fontSize: 14, fontWeight: 500, boxSizing: "border-box",
+              background: "var(--tem-ink)", color: "#fff", padding: "12px 18px", borderRadius: 999,
               display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
             }}
           >
@@ -147,7 +147,7 @@ export function AdvanceBar({ p, stacked = false }: { p: Proposal; stacked?: bool
             <ArrowRight size={16} strokeWidth={2.6} />
           </button>
         ) : (
-          <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--tem-handle)", padding: 13, textAlign: "center" }}>
+          <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: "var(--tem-handle)", padding: 13, textAlign: "center" }}>
             Pieza publicada. Lo que aprendiste puede volver a Ideas.
           </div>
         )}
@@ -157,8 +157,8 @@ export function AdvanceBar({ p, stacked = false }: { p: Proposal; stacked?: bool
             onClick={() => actions.setStage(p.id, prev)}
             title={`Volver a ${STAGE_LABEL[prev]} (se puede deshacer)`}
             style={{
-              all: "unset", cursor: "pointer", textAlign: "center", fontSize: 13, fontWeight: 600, color: "var(--tem-ink)", boxSizing: "border-box",
-              border: "1.5px solid var(--tem-ink)", padding: "12px 16px", borderRadius: 12, background: "var(--tem-surface)",
+              all: "unset", cursor: "pointer", textAlign: "center", fontSize: 13, fontWeight: 500, color: "var(--tem-ink)", boxSizing: "border-box",
+              border: "1px solid var(--tem-border)", padding: "12px 16px", borderRadius: 12, background: "var(--tem-surface)",
               display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
             }}
           >

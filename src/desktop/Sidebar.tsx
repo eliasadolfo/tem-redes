@@ -60,7 +60,7 @@ export default function Sidebar() {
                 background: active ? "var(--tem-ink)" : "transparent",
                 color: active ? "#fff" : "var(--tem-ink)",
                 fontSize: 14,
-                fontWeight: 600,
+                fontWeight: 500,
                 cursor: "pointer",
               }}
             >
@@ -72,7 +72,7 @@ export default function Sidebar() {
                     background: "var(--tem-orange)",
                     color: "#fff",
                     fontSize: 11,
-                    fontWeight: 700,
+                    fontWeight: 600,
                     borderRadius: 999,
                     minWidth: 20,
                     height: 20,
@@ -99,7 +99,7 @@ export default function Sidebar() {
             background: "var(--tem-ink)",
             color: "#fff",
             fontSize: 14,
-            fontWeight: 700,
+            fontWeight: 600,
             display: "grid",
             placeItems: "center",
             flexShrink: 0,
@@ -108,8 +108,8 @@ export default function Sidebar() {
           EA
         </div>
         <div style={{ lineHeight: 1.3 }}>
-          <div style={{ fontSize: 13, fontWeight: 700 }}>Elías Adolfo</div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--tem-handle)" }}>Fundador</div>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>Elías Adolfo</div>
+          <div style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-handle)" }}>Fundador</div>
         </div>
       </div>
     </aside>

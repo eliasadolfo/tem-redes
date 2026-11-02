@@ -32,13 +32,13 @@ export default function Calendar() {
 
   const arrowBtn: React.CSSProperties = {
     width: 38, height: 38, borderRadius: 12, background: "var(--tem-surface)",
-    border: "1.5px solid var(--tem-ink)", display: "grid", placeItems: "center", cursor: "pointer",
+    border: "1px solid var(--tem-border)", display: "grid", placeItems: "center", cursor: "pointer",
   };
 
   return (
     <div style={{ padding: "32px 40px" }}>
       <div className="eyebrow">Tu semana</div>
-      <div style={{ marginTop: 4, fontSize: 13, fontWeight: 500, color: "var(--tem-handle)" }}>
+      <div style={{ marginTop: 4, fontSize: 13, fontWeight: 400, color: "var(--tem-handle)" }}>
         Aquí aparece lo que está en Listo o Publicado. Lo que se produce vive en el tablero.
       </div>
 
@@ -57,11 +57,11 @@ export default function Calendar() {
               onClick={actions.toggleCalPicker}
               style={{
                 display: "flex", alignItems: "center", gap: 8, background: "var(--tem-surface)",
-                border: "1.5px solid var(--tem-ink)", borderRadius: 12, padding: "10px 16px", cursor: "pointer",
+                border: "1px solid var(--tem-border)", borderRadius: 12, padding: "10px 16px", cursor: "pointer",
               }}
             >
-              <span style={{ fontSize: 14, fontWeight: 600 }}>{weekRangeLabel(monday)}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--tem-handle)" }}>elegir</span>
+              <span style={{ fontSize: 14, fontWeight: 500 }}>{weekRangeLabel(monday)}</span>
+              <span style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)" }}>elegir</span>
             </button>
             {s.calPickerOpen && (
               <CalendarPopover
@@ -92,8 +92,8 @@ export default function Calendar() {
                 className="press"
                 onClick={() => setPlatFilter(f)}
                 style={{
-                  border: "1.5px solid var(--tem-ink)", borderRadius: 999, padding: "7px 14px",
-                  fontSize: 12, fontWeight: 600, cursor: "pointer",
+                  border: "1px solid var(--tem-border)", borderRadius: 999, padding: "7px 14px",
+                  fontSize: 12, fontWeight: 500, cursor: "pointer",
                   background: active ? "var(--tem-ink)" : "var(--tem-surface)",
                   color: active ? "#fff" : "var(--tem-ink)",
                 }}
@@ -112,7 +112,7 @@ export default function Calendar() {
           const items = visible.filter((p) => p.day === i);
           return (
             <div key={i} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--tem-handle)", padding: "0 2px" }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)", padding: "0 2px" }}>
                 {wk} {d.getDate()}
               </div>
               {s.loading ? (
@@ -147,7 +147,7 @@ function EmptySlot() {
     <div
       style={{
         border: "1.5px dashed var(--tem-border-empty)", borderRadius: 16, padding: "14px 15px",
-        fontSize: 12, fontWeight: 500, color: "#9A9A9A", minHeight: 64, display: "grid", placeItems: "center",
+        fontSize: 12, fontWeight: 400, color: "#9A9A9A", minHeight: 64, display: "grid", placeItems: "center",
         textAlign: "center", lineHeight: 1.4,
       }}
     >

@@ -35,7 +35,7 @@ export function IdeaPanel({ p }: { p: Proposal }) {
           onCommit={(v) => actions.updateFields(p.id, { line: parseLine(v) })}
           placeholder="Una línea · la palabra clave entre *asteriscos*"
           ariaLabel="Título de la pieza"
-          style={{ fontSize: 15, fontWeight: 600 }}
+          style={{ fontSize: 15, fontWeight: 500 }}
         />
         <Hint>La palabra entre *asteriscos* va en naranja en la pieza.</Hint>
       </div>
@@ -209,17 +209,17 @@ export function GrabarPanel({ p, onTeleprompter }: { p: Proposal; onTeleprompter
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       {/* Hoja de rodaje del formato */}
-      <div style={{ border: "1.5px solid var(--tem-ink)", borderRadius: 16, padding: "12px 14px" }}>
+      <div style={{ border: "1px solid var(--tem-border)", borderRadius: 16, padding: "12px 14px" }}>
         <button
           className="press-sm"
           onClick={() => setShowGuide((v) => !v)}
           aria-expanded={showGuide}
           style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", boxSizing: "border-box" }}
         >
-          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--tem-handle)" }}>
+          <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".01em", color: "var(--tem-handle)" }}>
             Hoja de rodaje · {g.name}
           </span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--tem-orange)" }}>{showGuide ? "Ocultar" : "Ver"}</span>
+          <span style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-orange)" }}>{showGuide ? "Ocultar" : "Ver"}</span>
         </button>
         {showGuide && (
           <div style={{ marginTop: 12 }}>
@@ -246,8 +246,8 @@ export function GrabarPanel({ p, onTeleprompter }: { p: Proposal; onTeleprompter
           disabled={!p.script?.hook}
           title={p.script?.hook ? "Texto grande con desplazamiento automático" : "Escribe el guion para usar el teleprompter"}
           style={{
-            all: "unset", cursor: "pointer", textAlign: "center", fontSize: 14, fontWeight: 600, color: "var(--tem-ink)",
-            border: "1.5px solid var(--tem-ink)", padding: 12, borderRadius: 12, boxSizing: "border-box",
+            all: "unset", cursor: "pointer", textAlign: "center", fontSize: 14, fontWeight: 500, color: "var(--tem-ink)",
+            border: "1px solid var(--tem-border)", padding: 12, borderRadius: 12, boxSizing: "border-box",
           }}
         >
           Abrir teleprompter
@@ -268,7 +268,7 @@ export function GrabarPanel({ p, onTeleprompter }: { p: Proposal; onTeleprompter
                     placeholder="Texto en pantalla en esta toma (o «sin texto»)"
                     ariaLabel={`Texto en pantalla · toma ${i + 1}`}
                   />
-                  <div style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-handle)", fontVariantNumeric: "tabular-nums" }}>
+                  <div style={{ fontSize: 11, fontWeight: 400, color: "var(--tem-handle)", fontVariantNumeric: "tabular-nums" }}>
                     Archivo: {suggestedFileName(g, title, i + 1)}
                   </div>
                 </div>
@@ -302,8 +302,8 @@ export function GrabarPanel({ p, onTeleprompter }: { p: Proposal; onTeleprompter
                     border: `1.5px solid ${on ? "var(--tem-orange)" : "var(--tem-ink)"}`, background: on ? "var(--tem-orange)" : "transparent", color: on ? "#fff" : "var(--tem-ink)",
                   }}
                 >
-                  <div style={{ fontSize: 13, fontWeight: 700 }}>{m.key} · {m.name}</div>
-                  <div style={{ fontSize: 11, fontWeight: 500, lineHeight: 1.35, marginTop: 2, opacity: on ? 0.9 : 0.75 }}>{m.help}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{m.key} · {m.name}</div>
+                  <div style={{ fontSize: 11, fontWeight: 400, lineHeight: 1.35, marginTop: 2, opacity: on ? 0.9 : 0.75 }}>{m.help}</div>
                 </button>
               );
             })}
@@ -324,11 +324,11 @@ export function GrabarPanel({ p, onTeleprompter }: { p: Proposal; onTeleprompter
           {delivery.map((d) =>
             d.auto ? (
               <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10 }} aria-label={`${d.text}: ${d.done ? "listo" : "falta"}`}>
-                <span style={{ width: 20, height: 20, flex: "none", borderRadius: 7, display: "grid", placeItems: "center", background: d.done ? "var(--tem-orange)" : "transparent", border: `2px solid ${d.done ? "var(--tem-orange)" : "var(--tem-handle)"}` }}>
+                <span style={{ width: 20, height: 20, flex: "none", borderRadius: 7, display: "grid", placeItems: "center", background: d.done ? "var(--tem-orange)" : "transparent", border: `1.5px solid ${d.done ? "var(--tem-orange)" : "var(--tem-border-strong)"}` }}>
                   {d.done && <svg width={11} height={11} viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5 5 9.5 10 3" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
                 </span>
-                <span style={{ flex: 1, fontSize: 13, fontWeight: 500, lineHeight: 1.35, opacity: d.done ? 0.55 : 1, textDecoration: d.done ? "line-through" : "none" }}>{d.text}</span>
-                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--tem-handle)" }}>auto</span>
+                <span style={{ flex: 1, fontSize: 13, fontWeight: 400, lineHeight: 1.35, opacity: d.done ? 0.55 : 1, textDecoration: d.done ? "line-through" : "none" }}>{d.text}</span>
+                <span style={{ fontSize: 10, fontWeight: 500, color: "var(--tem-handle)" }}>auto</span>
               </div>
             ) : (
               <CheckRow key={d.id} checked={d.done} text={d.text} onToggle={() => setManual(manual.map((x) => (x.id === d.id ? { ...x, done: !x.done } : x)))} />
@@ -351,8 +351,8 @@ export function EditarPanel({ p }: { p: Proposal }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {p.raw_url && (
-        <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)" }}>
-          Bruto: <a href={p.raw_url} target="_blank" rel="noreferrer" style={{ color: "var(--tem-orange)", fontWeight: 600, wordBreak: "break-all" }}>{p.raw_url}</a>
+        <div style={{ fontSize: 12, fontWeight: 400, color: "var(--tem-handle)" }}>
+          Bruto: <a href={p.raw_url} target="_blank" rel="noreferrer" style={{ color: "var(--tem-orange)", fontWeight: 500, wordBreak: "break-all" }}>{p.raw_url}</a>
         </div>
       )}
       <div>
@@ -431,7 +431,7 @@ export function ListoPanel({ p }: { p: Proposal }) {
                 onClick={() => actions.togglePub(t)}
                 aria-pressed={on}
                 style={{
-                  all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: "7px 13px", borderRadius: 999,
+                  all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 500, padding: "7px 13px", borderRadius: 999,
                   border: `1.5px solid ${on ? "var(--tem-orange)" : "var(--tem-ink)"}`,
                   background: on ? "var(--tem-orange)" : "var(--tem-surface)", color: on ? "#fff" : "var(--tem-ink)",
                 }}
@@ -448,7 +448,7 @@ export function ListoPanel({ p }: { p: Proposal }) {
       {p.final_url && (
         <div>
           <Label>Video final</Label>
-          <a href={p.final_url} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 600, color: "var(--tem-orange)", wordBreak: "break-all" }}>{p.final_url}</a>
+          <a href={p.final_url} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 500, color: "var(--tem-orange)", wordBreak: "break-all" }}>{p.final_url}</a>
         </div>
       )}
       <Hint>Por ahora publicas tú: descarga la imagen, copia el caption y sube el video final.</Hint>
@@ -477,7 +477,7 @@ export function PublicadoPanel({ p }: { p: Proposal }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
           {fields.map(({ k, label }) => (
             <div key={k}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--tem-handle)", marginBottom: 4 }}>{label}</div>
+              <div style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-handle)", marginBottom: 4 }}>{label}</div>
               <NumberInput value={r[k]} onCommit={(v) => setR({ [k]: v })} ariaLabel={label} />
             </div>
           ))}
@@ -513,7 +513,7 @@ function NumberInput({ value, onCommit, ariaLabel }: { value: number | null; onC
       }}
       placeholder="—"
       ariaLabel={ariaLabel}
-      style={{ textAlign: "center", fontWeight: 600 }}
+      style={{ textAlign: "center", fontWeight: 500 }}
     />
   );
 }

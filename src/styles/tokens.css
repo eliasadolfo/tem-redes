@@ -36,24 +36,29 @@
   --tem-hairline: #efefef;  /* divisores 1px */
   --tem-border-muted: #e4e4e4;
   --tem-border-empty: #e0e0e0;
+  /* Rediseño "clean" (2-nov-2026, Arte): los bordes desaparecen y separa la luz. */
+  --tem-border: rgba(0, 0, 0, 0.14);       /* controles: inputs, botón secundario */
+  --tem-border-soft: rgba(0, 0, 0, 0.06);  /* tarjetas y separadores */
+  --tem-border-strong: rgba(0, 0, 0, 0.3); /* casillas sin marcar */
 
   /* --- Tipografía --------------------------------------------------------- */
   /* UI del panel: Inter (optimizada para pantallas y datos, muy legible).
      Fallback a la fuente de sistema si Inter no carga. */
-  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text",
-    "Helvetica Neue", Arial, sans-serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Helvetica Neue", "Inter", Arial, sans-serif;
   /* Contenido de marca (cards 9:16): Montserrat, estilo afiche. */
   --font-brand: "Montserrat", var(--font-ui);
 
   /* --- Radios ------------------------------------------------------------- */
   --r-card916: 28px;
   --r-content: 18px;
-  --r-btn: 12px;
+  --r-btn: 10px;
   --r-chip: 10px;
   --r-pill: 999px;
 
   /* --- Sombras (sin borde; la sombra hace el trabajo) --------------------- */
-  --sh-card: 0 1px 2px rgba(17, 17, 17, 0.04), 0 8px 24px rgba(17, 17, 17, 0.07);
+  --sh-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04);
+  --sh-card-hover: 0 2px 4px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.07);
   --sh-elev: 0 1px 2px rgba(17, 17, 17, 0.06), 0 8px 24px rgba(17, 17, 17, 0.12),
     0 32px 64px rgba(17, 17, 17, 0.14);
   --sh-popover: 0 8px 24px rgba(17, 17, 17, 0.12), 0 32px 64px rgba(17, 17, 17, 0.16);

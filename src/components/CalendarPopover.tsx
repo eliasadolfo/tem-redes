@@ -87,7 +87,7 @@ export default function CalendarPopover({
           <button className="press-sm press" style={arrowBtn} onClick={onPrevMonth} aria-label="Mes anterior">
             <ChevronLeft size={18} strokeWidth={2.4} />
           </button>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>
+          <div style={{ fontSize: 15, fontWeight: 600 }}>
             {M_FULL[month]} {year}
           </div>
           <button className="press-sm press" style={arrowBtn} onClick={onNextMonth} aria-label="Mes siguiente">
@@ -100,7 +100,7 @@ export default function CalendarPopover({
           {WEEKDAY_HEADERS.map((w) => (
             <div
               key={w}
-              style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: "var(--tem-handle)" }}
+              style={{ textAlign: "center", fontSize: 11, fontWeight: 500, color: "var(--tem-handle)" }}
             >
               {w}
             </div>
@@ -122,7 +122,7 @@ export default function CalendarPopover({
                   borderRadius: 9,
                   border: "none",
                   fontSize: 13,
-                  fontWeight: 600,
+                  fontWeight: 500,
                   background: cs.bg,
                   color: cs.fg,
                   cursor: "pointer",

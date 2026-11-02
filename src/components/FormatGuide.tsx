@@ -17,18 +17,18 @@ export default function FormatGuide({ g, compact = false }: { g: Guide; compact?
   ];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", fontSize: 12, fontWeight: 600, alignItems: "baseline" }}>
-        <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-.01em" }}>{g.name}</span>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", fontSize: 12, fontWeight: 500, alignItems: "baseline" }}>
+        <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-.01em" }}>{g.name}</span>
         <span style={{ color: "var(--tem-handle)" }}>{g.aspect}</span>
         {g.duration && <span style={{ color: "var(--tem-orange)" }}>{durationLabel(g)}</span>}
         {!g.duration && g.extent && <span style={{ color: "var(--tem-orange)" }}>{g.extent}</span>}
       </div>
-      <div style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-handle)" }}>{g.resolution}</div>
+      <div style={{ fontSize: 11, fontWeight: 400, color: "var(--tem-handle)" }}>{g.resolution}</div>
 
       <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: compact ? "wrap" : "nowrap" }}>
         <Mock g={g} active={layer} onPick={setLayer} />
         <div style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--tem-handle)" }}>Así queda la pieza</div>
+          <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".01em", color: "var(--tem-handle)" }}>Así queda la pieza</div>
           {g.layers.map((l) => {
             const on = layer?.name === l.name;
             return (
@@ -42,14 +42,14 @@ export default function FormatGuide({ g, compact = false }: { g: Guide; compact?
                   background: on ? "var(--tem-bg)" : "transparent", border: `1.5px solid ${on ? "var(--tem-orange)" : "transparent"}`,
                 }}
               >
-                <span style={{ fontSize: 12, fontWeight: 600 }}>{l.name}{l.when ? <span style={{ fontWeight: 500, color: "var(--tem-handle)" }}> · {l.when}</span> : null}</span>
-                <span style={{ fontSize: 11, fontWeight: 500, lineHeight: 1.35, color: on ? "var(--tem-ink)" : "var(--tem-handle)" }}>{l.style}</span>
+                <span style={{ fontSize: 12, fontWeight: 500 }}>{l.name}{l.when ? <span style={{ fontWeight: 400, color: "var(--tem-handle)" }}> · {l.when}</span> : null}</span>
+                <span style={{ fontSize: 11, fontWeight: 400, lineHeight: 1.35, color: on ? "var(--tem-ink)" : "var(--tem-handle)" }}>{l.style}</span>
               </button>
             );
           })}
-          {g.layers.length === 0 && <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)" }}>{g.frame}</div>}
+          {g.layers.length === 0 && <div style={{ fontSize: 12, fontWeight: 400, color: "var(--tem-handle)" }}>{g.frame}</div>}
           {g.safe.top + g.safe.bottom > 0 && (
-            <div style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-handle)", lineHeight: 1.4 }}>
+            <div style={{ fontSize: 11, fontWeight: 400, color: "var(--tem-handle)", lineHeight: 1.4 }}>
               Zonas rayadas: nada importante ahí (interfaz de la red). Arriba {g.safe.top} px, abajo {g.safe.bottom} px, lados {g.safe.left}/{g.safe.right} px.
             </div>
           )}
@@ -59,29 +59,29 @@ export default function FormatGuide({ g, compact = false }: { g: Guide; compact?
       <div style={{ display: "grid", gridTemplateColumns: compact ? "1fr" : "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 }}>
         {rows.map(([k, v]) => (
           <div key={k} style={{ background: "var(--tem-bg)", borderRadius: 12, padding: "10px 12px" }}>
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--tem-handle)", marginBottom: 4 }}>{k}</div>
-            <div style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.45 }}>{v}</div>
+            <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".01em", color: "var(--tem-handle)", marginBottom: 4 }}>{k}</div>
+            <div style={{ fontSize: 12, fontWeight: 400, lineHeight: 1.45 }}>{v}</div>
           </div>
         ))}
       </div>
 
       <div>
-        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--tem-orange)", marginBottom: 6 }}>No hacer</div>
+        <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".01em", color: "var(--tem-orange)", marginBottom: 6 }}>No hacer</div>
         <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 3 }}>
-          {g.avoid.map((t) => <li key={t} style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.4 }}>{t}</li>)}
+          {g.avoid.map((t) => <li key={t} style={{ fontSize: 12, fontWeight: 400, lineHeight: 1.4 }}>{t}</li>)}
         </ul>
       </div>
 
       {g.thumbnail && (
-        <div style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.45 }}>
-          <span style={{ fontWeight: 600 }}>Miniatura / portada: </span>{g.thumbnail}
+        <div style={{ fontSize: 12, fontWeight: 400, lineHeight: 1.45 }}>
+          <span style={{ fontWeight: 500 }}>Miniatura / portada: </span>{g.thumbnail}
         </div>
       )}
 
       <details>
-        <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--tem-handle)" }}>Reglas de siempre ({GENERAL_RULES.length})</summary>
+        <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 500, color: "var(--tem-handle)" }}>Reglas de siempre ({GENERAL_RULES.length})</summary>
         <ul style={{ margin: "8px 0 0", paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
-          {GENERAL_RULES.map((t) => <li key={t} style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.4 }}>{t}</li>)}
+          {GENERAL_RULES.map((t) => <li key={t} style={{ fontSize: 12, fontWeight: 400, lineHeight: 1.4 }}>{t}</li>)}
         </ul>
       </details>
     </div>
@@ -101,7 +101,7 @@ function Mock({ g, active, onPick }: { g: Guide; active: MockLayer | null; onPic
       aria-label={`Maqueta ${g.aspect}`}
       style={{
         position: "relative", width, height, flex: "none", maxWidth: "100%", borderRadius: 14, overflow: "hidden",
-        background: dark ? "#111" : "var(--tem-bg)", border: "1.5px solid var(--tem-ink)", boxSizing: "border-box",
+        background: dark ? "#111" : "var(--tem-bg)", border: "1px solid var(--tem-border)", boxSizing: "border-box",
       }}
     >
       {/* zonas seguras */}
@@ -126,7 +126,7 @@ function Mock({ g, active, onPick }: { g: Guide; active: MockLayer | null; onPic
               border: full ? "1.5px dashed rgba(255,255,255,.45)" : `1.5px solid ${on ? "#fff" : "var(--tem-orange)"}`,
               background: on ? "rgba(244,124,60,.45)" : full ? "transparent" : "rgba(244,124,60,.22)",
               borderRadius: 4, display: "flex", alignItems: full ? "flex-end" : "center", justifyContent: full ? "center" : "flex-start",
-              padding: 3, fontSize: 9, fontWeight: 600, letterSpacing: ".04em", color: dark || full ? "#fff" : "var(--tem-ink)",
+              padding: 3, fontSize: 9, fontWeight: 500, letterSpacing: ".04em", color: dark || full ? "#fff" : "var(--tem-ink)",
               lineHeight: 1, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
             }}
           >
@@ -135,7 +135,7 @@ function Mock({ g, active, onPick }: { g: Guide; active: MockLayer | null; onPic
         );
       })}
       {g.layers.length === 0 && (
-        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", fontSize: 11, fontWeight: 600, color: "var(--tem-handle)", textAlign: "center", padding: 10 }}>
+        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", fontSize: 11, fontWeight: 500, color: "var(--tem-handle)", textAlign: "center", padding: 10 }}>
           Sin maqueta: no se graba video
         </div>
       )}

@@ -27,7 +27,7 @@ export default function Toast({ message, bottom = 32, onUndo = null }: Props) {
         background: "var(--tem-ink)",
         color: "#fff",
         fontSize: 13,
-        fontWeight: 600,
+        fontWeight: 500,
         padding: onUndo ? "9px 9px 9px 16px" : "11px 16px",
         borderRadius: 14,
         boxShadow: "var(--sh-popover)",
@@ -50,7 +50,7 @@ export default function Toast({ message, bottom = 32, onUndo = null }: Props) {
           className="press-sm"
           onClick={onUndo}
           style={{
-            all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#fff",
+            all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#fff",
             border: "1.5px solid rgba(255,255,255,.55)", borderRadius: 999, padding: "6px 12px",
             marginLeft: 4, whiteSpace: "nowrap",
           }}

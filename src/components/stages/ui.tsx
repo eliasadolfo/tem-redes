@@ -2,50 +2,50 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 export const INPUT: CSSProperties = {
-  width: "100%", boxSizing: "border-box", fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 500,
-  color: "var(--tem-ink)", background: "var(--tem-bg)", border: "1.5px solid transparent", borderRadius: 12,
+  width: "100%", boxSizing: "border-box", fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 400,
+  color: "var(--tem-ink)", background: "var(--tem-bg)", border: "1px solid transparent", borderRadius: 12,
   padding: "10px 12px", outline: "none", lineHeight: 1.45,
 };
 
 export const SELECT: CSSProperties = {
-  fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 600, color: "var(--tem-ink)",
-  background: "var(--tem-surface)", border: "1.5px solid var(--tem-ink)", borderRadius: 12, padding: "9px 10px",
+  fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 500, color: "var(--tem-ink)",
+  background: "var(--tem-surface)", border: "1px solid var(--tem-border)", borderRadius: 12, padding: "9px 10px",
   minWidth: 0,
 };
 
 export const BTN_PRIMARY: CSSProperties = {
-  all: "unset", cursor: "pointer", textAlign: "center", fontSize: 14, fontWeight: 600,
-  background: "var(--tem-orange)", color: "#fff", padding: "12px 20px", borderRadius: 12,
+  all: "unset", cursor: "pointer", textAlign: "center", fontSize: 14, fontWeight: 500,
+  background: "var(--tem-ink)", color: "#fff", padding: "11px 18px", borderRadius: 999,
   display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, boxSizing: "border-box",
 };
 
 export const BTN_SECONDARY: CSSProperties = {
-  all: "unset", cursor: "pointer", textAlign: "center", fontSize: 13, fontWeight: 600,
-  color: "var(--tem-ink)", border: "1.5px solid var(--tem-ink)", padding: "9px 14px", borderRadius: 12,
+  all: "unset", cursor: "pointer", textAlign: "center", fontSize: 13, fontWeight: 500,
+  color: "var(--tem-ink)", border: "1px solid var(--tem-border)", padding: "9px 14px", borderRadius: 12,
   display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, boxSizing: "border-box",
   background: "var(--tem-surface)",
 };
 
 export const BTN_GHOST: CSSProperties = {
-  all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--tem-handle)",
-  border: "1.5px solid var(--tem-border-muted)", padding: "7px 11px", borderRadius: 10,
+  all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 500, color: "var(--tem-handle)",
+  border: "1px solid var(--tem-border)", padding: "7px 11px", borderRadius: 10,
   display: "inline-flex", alignItems: "center", gap: 6, boxSizing: "border-box",
 };
 
 export function Label({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
-      <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--tem-handle)" }}>
+      <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".01em", color: "var(--tem-handle)" }}>
         {children}
       </span>
-      {right && <span style={{ fontSize: 11, fontWeight: 600, color: "var(--tem-orange)" }}>{right}</span>}
+      {right && <span style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-orange)" }}>{right}</span>}
     </div>
   );
 }
 
 export function Hint({ children, warn = false }: { children: ReactNode; warn?: boolean }) {
   return (
-    <div style={{ marginTop: 6, fontSize: 11, fontWeight: 500, lineHeight: 1.4, color: warn ? "var(--tem-orange)" : "var(--tem-handle)" }}>
+    <div style={{ marginTop: 6, fontSize: 11, fontWeight: 400, lineHeight: 1.4, color: warn ? "var(--tem-orange)" : "var(--tem-handle)" }}>
       {children}
     </div>
   );
@@ -135,7 +135,7 @@ export function CheckRow({
         aria-label={text}
         style={{
           all: "unset", cursor: "pointer", width: big ? 26 : 20, height: big ? 26 : 20, flex: "none", borderRadius: 7,
-          border: `2px solid ${checked ? "var(--tem-orange)" : "var(--tem-ink)"}`,
+          border: `1.5px solid ${checked ? "var(--tem-orange)" : "var(--tem-border-strong)"}`,
           background: checked ? "var(--tem-orange)" : "transparent", display: "grid", placeItems: "center",
         }}
       >
@@ -145,7 +145,7 @@ export function CheckRow({
           </svg>
         )}
       </button>
-      <span style={{ flex: 1, fontSize: big ? 15 : 13, fontWeight: 500, lineHeight: 1.35, textDecoration: checked ? "line-through" : "none", opacity: checked ? 0.55 : 1 }}>
+      <span style={{ flex: 1, fontSize: big ? 15 : 13, fontWeight: 400, lineHeight: 1.35, textDecoration: checked ? "line-through" : "none", opacity: checked ? 0.55 : 1 }}>
         {text}
       </span>
       {onRemove && (
@@ -165,8 +165,8 @@ export function TemplateChip({ text, onPick }: { text: string; onPick: () => voi
       onClick={onPick}
       title="Usar esta plantilla"
       style={{
-        all: "unset", cursor: "pointer", fontSize: 11, fontWeight: 500, padding: "6px 10px", borderRadius: 999,
-        border: "1.5px solid var(--tem-border-muted)", color: "var(--tem-ink)", lineHeight: 1.3, maxWidth: "100%",
+        all: "unset", cursor: "pointer", fontSize: 11, fontWeight: 400, padding: "6px 10px", borderRadius: 999,
+        border: "1px solid var(--tem-border)", color: "var(--tem-ink)", lineHeight: 1.3, maxWidth: "100%",
       }}
     >
       {text}

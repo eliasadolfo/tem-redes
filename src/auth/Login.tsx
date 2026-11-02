@@ -27,8 +27,8 @@ export default function Login() {
   };
 
   const input: React.CSSProperties = {
-    width: "100%", boxSizing: "border-box", fontFamily: "var(--font-ui)", fontSize: 15, fontWeight: 500,
-    color: "var(--tem-ink)", background: "var(--tem-bg)", border: "1.5px solid transparent", borderRadius: 12,
+    width: "100%", boxSizing: "border-box", fontFamily: "var(--font-ui)", fontSize: 15, fontWeight: 400,
+    color: "var(--tem-ink)", background: "var(--tem-bg)", border: "1px solid transparent", borderRadius: 12,
     padding: "13px 14px", outline: "none",
   };
 
@@ -44,12 +44,12 @@ export default function Login() {
       >
         <img src={logoBlack} alt="TEM" style={{ height: 28, width: "auto", objectFit: "contain", alignSelf: "flex-start" }} />
         <div className="eyebrow" style={{ marginTop: 10 }}>Acceso</div>
-        <h1 style={{ margin: "0 0 6px", fontWeight: 700, fontSize: 26, letterSpacing: "-.02em", lineHeight: 1.1 }}>
+        <h1 style={{ margin: "0 0 6px", fontWeight: 600, fontSize: 26, letterSpacing: "-.02em", lineHeight: 1.1 }}>
           Entra a tu plataforma
         </h1>
 
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".18em", color: "var(--tem-handle)" }}>CORREO</span>
+          <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".01em", color: "var(--tem-handle)" }}>CORREO</span>
           <input
             className="tem-textarea"
             type="email"
@@ -61,7 +61,7 @@ export default function Login() {
           />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".18em", color: "var(--tem-handle)" }}>CONTRASEÑA</span>
+          <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".01em", color: "var(--tem-handle)" }}>CONTRASEÑA</span>
           <input
             className="tem-textarea"
             type="password"
@@ -75,7 +75,7 @@ export default function Login() {
         </label>
 
         {error && (
-          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--tem-orange)" }}>{error}</div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: "var(--tem-orange)" }}>{error}</div>
         )}
 
         <button
@@ -84,12 +84,12 @@ export default function Login() {
           disabled={busy}
           style={{
             all: "unset", cursor: "pointer", boxSizing: "border-box", marginTop: 6, textAlign: "center", fontSize: 15,
-            fontWeight: 600, background: "var(--tem-orange)", color: "#fff", padding: 14, borderRadius: 12,
+            fontWeight: 500, background: "var(--tem-ink)", color: "#fff", padding: 13, borderRadius: 999,
           }}
         >
           {busy ? "Entrando…" : "Entrar"}
         </button>
-        <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)", textAlign: "center" }}>
+        <div style={{ fontSize: 12, fontWeight: 400, color: "var(--tem-handle)", textAlign: "center" }}>
           Plataforma privada de Tu Escuela de Marcas. ¡Hagamos que pase!
         </div>
       </form>

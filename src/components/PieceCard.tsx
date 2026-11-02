@@ -58,7 +58,7 @@ export default function PieceCard({ p, showStage = false, draggable = false, sty
             <span
               key={t}
               style={{
-                fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 999,
+                fontSize: 10, fontWeight: 500, padding: "3px 8px", borderRadius: 999,
                 border: `1.5px solid ${done ? "rgba(255,255,255,.4)" : "var(--tem-ink)"}`,
               }}
             >
@@ -66,16 +66,16 @@ export default function PieceCard({ p, showStage = false, draggable = false, sty
             </span>
           ))}
           {showStage && (
-            <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, letterSpacing: ".12em", color: "var(--tem-orange)" }}>
+            <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, letterSpacing: ".12em", color: "var(--tem-orange)" }}>
               {STAGE_LABEL[p.stage].toUpperCase()}
             </span>
           )}
         </div>
-        <div style={{ marginTop: 8, fontSize: 9, fontWeight: 700, letterSpacing: ".12em", color: "var(--tem-orange)" }}>
+        <div style={{ marginTop: 8, fontSize: 9, fontWeight: 600, letterSpacing: ".12em", color: "var(--tem-orange)" }}>
           {p.eyebrow}
         </div>
-        <div style={{ marginTop: 3, fontSize: 15, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-.01em" }}>{title}</div>
-        <div style={{ marginTop: 5, fontSize: 11, fontWeight: 500, color: done ? "rgba(255,255,255,.6)" : "var(--tem-handle)", lineHeight: 1.35 }}>
+        <div style={{ marginTop: 3, fontSize: 15, fontWeight: 600, lineHeight: 1.2, letterSpacing: "-.01em" }}>{title}</div>
+        <div style={{ marginTop: 5, fontSize: 11, fontWeight: 400, color: done ? "rgba(255,255,255,.6)" : "var(--tem-handle)", lineHeight: 1.35 }}>
           {stageSummary(p, p.stage)}
         </div>
       </button>
@@ -83,7 +83,7 @@ export default function PieceCard({ p, showStage = false, draggable = false, sty
       {next && (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5 }}>
           {missing && (
-            <span style={{ alignSelf: "stretch", fontSize: 10, fontWeight: 500, color: "var(--tem-handle)", lineHeight: 1.3 }}>
+            <span style={{ alignSelf: "stretch", fontSize: 10, fontWeight: 400, color: "var(--tem-handle)", lineHeight: 1.3 }}>
               {missing}
             </span>
           )}
@@ -94,8 +94,8 @@ export default function PieceCard({ p, showStage = false, draggable = false, sty
             title={missing ?? `Pasar a ${STAGE_LABEL[next]}`}
             style={{
               all: "unset", cursor: "pointer", flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5,
-              fontSize: 12, fontWeight: 600, background: "var(--tem-orange)", color: "#fff",
-              padding: "7px 11px", borderRadius: 10,
+              fontSize: 12, fontWeight: 500, background: "var(--tem-ink)", color: "#fff",
+              padding: "7px 12px", borderRadius: 999,
             }}
           >
             Pasar a {STAGE_LABEL[next]}

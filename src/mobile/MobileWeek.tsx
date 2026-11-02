@@ -11,7 +11,7 @@ export default function MobileWeek() {
 
   const arrow: React.CSSProperties = {
     all: "unset", cursor: "pointer", width: 38, height: 38, flex: "none", borderRadius: 12,
-    display: "grid", placeItems: "center", background: "var(--tem-surface)", border: "1.5px solid var(--tem-ink)",
+    display: "grid", placeItems: "center", background: "var(--tem-surface)", border: "1px solid var(--tem-border)",
   };
 
   return (
@@ -21,14 +21,14 @@ export default function MobileWeek() {
         <button className="press-sm" style={arrow} onClick={() => actions.calWeekNav(-1)} aria-label="Semana anterior">
           <span style={{ width: 0, height: 0, borderRight: "8px solid var(--tem-ink)", borderTop: "6px solid transparent", borderBottom: "6px solid transparent" }} />
         </button>
-        <div style={{ flex: 1, textAlign: "center", fontWeight: 700, fontSize: 17, letterSpacing: "-.01em" }}>
+        <div style={{ flex: 1, textAlign: "center", fontWeight: 600, fontSize: 17, letterSpacing: "-.01em" }}>
           {weekRangeLabel(monday)}
         </div>
         <button className="press-sm" style={arrow} onClick={() => actions.calWeekNav(1)} aria-label="Semana siguiente">
           <span style={{ width: 0, height: 0, borderLeft: "8px solid var(--tem-ink)", borderTop: "6px solid transparent", borderBottom: "6px solid transparent" }} />
         </button>
       </div>
-      <div style={{ marginTop: 6, fontSize: 12, fontWeight: 500, color: "var(--tem-handle)" }}>
+      <div style={{ marginTop: 6, fontSize: 12, fontWeight: 400, color: "var(--tem-handle)" }}>
         Solo lo que está en Listo o Publicado.
       </div>
 
@@ -38,14 +38,14 @@ export default function MobileWeek() {
           const items = visible.filter((p) => p.day === i);
           return (
             <div key={i}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--tem-handle)", marginBottom: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)", marginBottom: 8 }}>
                 {name} {d.getDate()}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                 {s.loading ? (
                   <div className="skeleton" style={{ height: 70 }} aria-busy="true" />
                 ) : items.length === 0 ? (
-                  <div style={{ border: "1.5px dashed var(--tem-border-empty)", borderRadius: 16, padding: 14, fontWeight: 500, fontSize: 12, color: "#B8B8B8" }}>
+                  <div style={{ border: "1.5px dashed var(--tem-border-empty)", borderRadius: 16, padding: 14, fontWeight: 400, fontSize: 12, color: "#B8B8B8" }}>
                     Día libre · pasa una pieza a Listo para verla aquí
                   </div>
                 ) : (

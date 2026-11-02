@@ -53,13 +53,13 @@ export default function MobileApp() {
               }}
             >
               <Icon size={24} strokeWidth={2.4} />
-              <span style={{ fontSize: 10, fontWeight: 600 }}>{label}</span>
+              <span style={{ fontSize: 10, fontWeight: 500 }}>{label}</span>
               {key === "grabar" && toRecord > 0 && (
                 <span
                   aria-label={`${toRecord} por grabar`}
                   style={{
                     position: "absolute", top: -4, right: "calc(50% - 22px)", minWidth: 16, height: 16, padding: "0 4px", borderRadius: 999,
-                    background: "var(--tem-orange)", color: "#fff", fontSize: 10, fontWeight: 700, display: "grid", placeItems: "center",
+                    background: "var(--tem-orange)", color: "#fff", fontSize: 10, fontWeight: 600, display: "grid", placeItems: "center",
                   }}
                 >
                   {toRecord}

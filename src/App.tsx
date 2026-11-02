@@ -27,7 +27,7 @@ function Booting({ label = "Abriendo tu plataforma…" }: { label?: string }) {
       aria-live="polite"
       style={{
         minHeight: "100vh", display: "grid", placeItems: "center", background: "var(--tem-bg)",
-        color: "var(--tem-handle)", fontSize: 14, fontWeight: 500,
+        color: "var(--tem-handle)", fontSize: 14, fontWeight: 400,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -48,14 +48,14 @@ function Offline({ onRetry }: { onRetry: () => void }) {
     <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "var(--tem-bg)", padding: 18 }}>
       <div style={{ maxWidth: 380, background: "var(--tem-surface)", borderRadius: 24, padding: 28, boxShadow: "var(--sh-elev)", textAlign: "center" }}>
         <div className="eyebrow">Sin conexión</div>
-        <div style={{ marginTop: 10, fontWeight: 700, fontSize: 20, letterSpacing: "-.02em" }}>No pude conectar con tu plataforma</div>
-        <div style={{ marginTop: 8, fontSize: 13, fontWeight: 500, color: "var(--tem-handle)", lineHeight: 1.5 }}>
+        <div style={{ marginTop: 10, fontWeight: 600, fontSize: 20, letterSpacing: "-.02em" }}>No pude conectar con tu plataforma</div>
+        <div style={{ marginTop: 8, fontSize: 13, fontWeight: 400, color: "var(--tem-handle)", lineHeight: 1.5 }}>
           Revisa tu internet y vuelve a intentar. Tus propuestas están guardadas; no se perdió nada.
         </div>
         <button
           className="press"
           onClick={onRetry}
-          style={{ all: "unset", cursor: "pointer", marginTop: 18, fontSize: 14, fontWeight: 600, background: "var(--tem-orange)", color: "#fff", padding: "12px 20px", borderRadius: 12 }}
+          style={{ all: "unset", cursor: "pointer", marginTop: 18, fontSize: 14, fontWeight: 500, background: "var(--tem-ink)", color: "#fff", padding: "11px 18px", borderRadius: 999 }}
         >
           Reintentar
         </button>
