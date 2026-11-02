@@ -6,7 +6,7 @@ import type { HeadlineLine, Proposal } from "../types";
 import { supabase } from "./supabase";
 
 /** Token de la sesión actual: los webhooks lo verifican contra Supabase Auth. */
-async function getToken(): Promise<string> {
+export async function getToken(): Promise<string> {
   if (!supabase) return "";
   const { data } = await supabase.auth.getSession();
   return data.session?.access_token ?? "";
