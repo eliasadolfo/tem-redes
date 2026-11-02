@@ -241,6 +241,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (stage === "editar" && !p.recorded_at) next.recorded_at = new Date().toISOString();
       if (stage === "publicado" && !p.published_at) next.published_at = new Date().toISOString();
       applyFields(id, next);
+      // Si la pieza está abierta, el copiloto cambia de contexto con ella.
+      if (sRef.current.work === id) {
+        patch((prev) => ({ chat: [...prev.chat, { role: "ai", text: OPEN_TEXT[stage] }] }));
+      }
       flash(`Pasó a ${STAGE_LABEL[stage]}`, () => applyFields(id, before));
       return true;
     };

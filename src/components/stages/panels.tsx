@@ -1,0 +1,374 @@
+// Paneles por etapa de la ficha de la pieza. Mismos componentes en escritorio y móvil.
+import { useState } from "react";
+import { useStore } from "../../store";
+import { DAY_NAMES_FULL } from "../../lib/dates";
+import { PLATFORM_LABEL } from "../../lib/platforms";
+import {
+  DURATIONS_S,
+  EMPTY_SCRIPT,
+  HOOK_TEMPLATES,
+  SCRIPT_FORMATS,
+  SHOT_TEMPLATES,
+  defaultChecklist,
+  newItem,
+  parseLine,
+} from "../../lib/stages";
+import type { CheckItem, Proposal, Results, Script } from "../../types";
+import { BTN_GHOST, CheckRow, Hint, INPUT, Label, SELECT, TemplateChip, TextArea, TextInput } from "./ui";
+
+/* -------------------------------------------------------------------------- */
+/*  1 · Idea                                                                   */
+/* -------------------------------------------------------------------------- */
+
+export function IdeaPanel({ p }: { p: Proposal }) {
+  const { actions } = useStore();
+  const lineText = p.line.key ? `${p.line.pre}*${p.line.key}*${p.line.post}` : p.line.pre + p.line.post;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div>
+        <Label right="se guarda solo">Título</Label>
+        <TextInput
+          value={lineText}
+          onCommit={(v) => actions.updateFields(p.id, { line: parseLine(v) })}
+          placeholder="Una línea · la palabra clave entre *asteriscos*"
+          ariaLabel="Título de la pieza"
+          style={{ fontSize: 15, fontWeight: 600 }}
+        />
+        <Hint>La palabra entre *asteriscos* va en naranja en la pieza.</Hint>
+      </div>
+      <div>
+        <Label>Por qué importa</Label>
+        <TextArea
+          value={p.notes ?? ""}
+          onCommit={(v) => actions.updateFields(p.id, { notes: v })}
+          placeholder="Qué le pasa a quien lo ve, qué cambia si lo sabe…"
+          ariaLabel="Por qué importa"
+          rows={3}
+        />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div>
+          <Label>De dónde salió</Label>
+          <TextInput value={p.source ?? ""} onCommit={(v) => actions.updateFields(p.id, { source: v })} placeholder="Reunión, comentario, dato…" ariaLabel="Origen" />
+        </div>
+        <div>
+          <Label>Etiqueta</Label>
+          <TextInput value={p.eyebrow} onCommit={(v) => actions.updateFields(p.id, { eyebrow: v.toUpperCase() })} placeholder="EL DATO, EL COSTO…" ariaLabel="Etiqueta de la pieza" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  2 · Guion                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export function GuionPanel({ p }: { p: Proposal }) {
+  const { actions } = useStore();
+  const s: Script = p.script ?? EMPTY_SCRIPT;
+  const setScript = (patch: Partial<Script>) => actions.updateFields(p.id, { script: { ...s, ...patch } });
+  const shots = p.shots ?? [];
+  const setShots = (next: CheckItem[]) => actions.updateFields(p.id, { shots: next });
+  const [newShot, setNewShot] = useState("");
+  const addShot = (text: string) => {
+    const clean = text.trim();
+    if (!clean) return;
+    setShots([...shots, newItem(clean)]);
+    setNewShot("");
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div>
+          <Label>Formato</Label>
+          <select value={s.format} onChange={(e) => setScript({ format: e.target.value })} aria-label="Formato" style={{ ...SELECT, width: "100%" }}>
+            {SCRIPT_FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select>
+        </div>
+        <div>
+          <Label>Duración</Label>
+          <select
+            value={s.duration_s ?? ""}
+            onChange={(e) => setScript({ duration_s: e.target.value ? Number(e.target.value) : null })}
+            aria-label="Duración"
+            style={{ ...SELECT, width: "100%" }}
+          >
+            <option value="">Sin definir</option>
+            {DURATIONS_S.map((d) => <option key={d} value={d}>{d < 120 ? `${d} s` : `${Math.round(d / 60)} min`}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <Label right="se guarda solo">Gancho</Label>
+        <TextArea value={s.hook} onCommit={(v) => setScript({ hook: v })} placeholder="Los primeros 3 segundos: lo que hace que no pasen de largo." ariaLabel="Gancho" rows={2} />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+          {HOOK_TEMPLATES.map((t) => <TemplateChip key={t} text={t} onPick={() => setScript({ hook: t })} />)}
+        </div>
+      </div>
+      <div>
+        <Label>Desarrollo</Label>
+        <TextArea value={s.body} onCommit={(v) => setScript({ body: v })} placeholder="El caso, el dato, los pasos. Frases cortas, una idea por línea." ariaLabel="Desarrollo" rows={5} />
+      </div>
+      <div>
+        <Label>Cierre / llamado a la acción</Label>
+        <TextArea value={s.cta} onCommit={(v) => setScript({ cta: v })} placeholder="Qué quieres que hagan después de verlo." ariaLabel="Cierre" rows={2} />
+      </div>
+
+      <div>
+        <Label right={shots.length ? `${shots.length} tomas` : undefined}>Lista de tomas</Label>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {shots.map((sh) => (
+            <CheckRow
+              key={sh.id}
+              checked={sh.done}
+              text={sh.text}
+              onToggle={() => setShots(shots.map((x) => (x.id === sh.id ? { ...x, done: !x.done } : x)))}
+              onRemove={() => setShots(shots.filter((x) => x.id !== sh.id))}
+            />
+          ))}
+          {shots.length === 0 && <Hint>Sin tomas todavía. Añade una o toca una plantilla.</Hint>}
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={newShot}
+              onChange={(e) => setNewShot(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addShot(newShot)}
+              placeholder="Nueva toma · Enter para añadir"
+              aria-label="Nueva toma"
+              className="tem-textarea"
+              style={{ ...INPUT, flex: 1 }}
+            />
+            <button className="press" onClick={() => addShot(newShot)} disabled={!newShot.trim()} style={BTN_GHOST}>Añadir</button>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {SHOT_TEMPLATES.filter((t) => !shots.some((x) => x.text === t)).map((t) => (
+              <TemplateChip key={t} text={`+ ${t}`} onPick={() => addShot(t)} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  3 · Grabar                                                                 */
+/* -------------------------------------------------------------------------- */
+
+export function GrabarPanel({ p, onTeleprompter }: { p: Proposal; onTeleprompter?: () => void }) {
+  const { actions } = useStore();
+  const checklist = p.checklist ?? defaultChecklist();
+  const setChecklist = (next: CheckItem[]) => actions.updateFields(p.id, { checklist: next });
+  const shots = p.shots ?? [];
+  const setShots = (next: CheckItem[]) => actions.updateFields(p.id, { shots: next });
+  const done = shots.filter((s) => s.done).length;
+  const allDone = shots.length > 0 && done === shots.length;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div>
+        <Label>Antes de grabar</Label>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {checklist.map((c) => (
+            <CheckRow key={c.id} checked={c.done} text={c.text} onToggle={() => setChecklist(checklist.map((x) => (x.id === c.id ? { ...x, done: !x.done } : x)))} />
+          ))}
+        </div>
+      </div>
+
+      {onTeleprompter && (
+        <button
+          className="press invert-hover"
+          onClick={onTeleprompter}
+          disabled={!p.script?.hook}
+          title={p.script?.hook ? "Texto grande con desplazamiento automático" : "Escribe el guion para usar el teleprompter"}
+          style={{
+            all: "unset", cursor: "pointer", textAlign: "center", fontSize: 14, fontWeight: 600, color: "var(--tem-ink)",
+            border: "1.5px solid var(--tem-ink)", padding: 12, borderRadius: 12, boxSizing: "border-box",
+          }}
+        >
+          Abrir teleprompter
+        </button>
+      )}
+
+      <div>
+        <Label right={shots.length ? `${done} de ${shots.length}` : undefined}>Tomas</Label>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {shots.map((sh) => (
+            <CheckRow key={sh.id} big checked={sh.done} text={sh.text} onToggle={() => setShots(shots.map((x) => (x.id === sh.id ? { ...x, done: !x.done } : x)))} />
+          ))}
+          {shots.length === 0 && <Hint warn>No hay tomas: vuelve a Guion y añade al menos una, o pega el link del bruto.</Hint>}
+          {shots.length > 0 && !allDone && (
+            <button className="press" onClick={() => setShots(shots.map((x) => ({ ...x, done: true })))} style={{ ...BTN_GHOST, alignSelf: "flex-start" }}>
+              Marcar todas como grabadas
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <Label>Link del bruto</Label>
+        <TextInput value={p.raw_url ?? ""} onCommit={(v) => actions.updateFields(p.id, { raw_url: v.trim() })} placeholder="https://drive.google.com/…" ariaLabel="Link del bruto" />
+        <Hint>El video pesado vive en Drive; aquí solo va el enlace.</Hint>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  4 · Editar                                                                 */
+/* -------------------------------------------------------------------------- */
+
+export function EditarPanel({ p, extra }: { p: Proposal; extra?: React.ReactNode }) {
+  const { actions } = useStore();
+  const tagsText = p.tags.join(" ");
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div>
+        <Label right="se guarda solo">Instrucciones de edición</Label>
+        <TextArea
+          value={p.notes ?? ""}
+          onCommit={(v) => actions.updateFields(p.id, { notes: v })}
+          placeholder="Cortes, ritmo, dónde van los subtítulos, qué texto aparece en pantalla…"
+          ariaLabel="Instrucciones de edición"
+          rows={5}
+        />
+        {extra}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div>
+          <Label>Link del video final</Label>
+          <TextInput value={p.final_url ?? ""} onCommit={(v) => actions.updateFields(p.id, { final_url: v.trim() })} placeholder="https://drive.google.com/…" ariaLabel="Link del video final" />
+        </div>
+        <div>
+          <Label>Link de la miniatura</Label>
+          <TextInput value={p.thumbnail_url ?? ""} onCommit={(v) => actions.updateFields(p.id, { thumbnail_url: v.trim() })} placeholder="Opcional" ariaLabel="Link de la miniatura" />
+        </div>
+      </div>
+      <div>
+        <Label right="se guarda solo">Caption</Label>
+        <TextArea value={p.caption} onCommit={(v) => actions.updateCaption(p.id, v)} placeholder="El texto que acompaña la pieza." ariaLabel="Caption" rows={3} />
+      </div>
+      <div>
+        <Label>Hashtags</Label>
+        <TextInput
+          value={tagsText}
+          onCommit={(v) => actions.updateFields(p.id, { tags: v.split(/[\s,]+/).filter(Boolean).map((t) => (t.startsWith("#") ? t : `#${t}`)) })}
+          placeholder="#marca #TEM"
+          ariaLabel="Hashtags"
+        />
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  5 · Listo                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export function ListoPanel({ p }: { p: Proposal }) {
+  const s = useStore();
+  const { actions } = s;
+  const activeCount = p.platforms.filter((t) => !s.pubOff[t]).length;
+  const activeNames = p.platforms.filter((t) => !s.pubOff[t]).map((t) => PLATFORM_LABEL[t]).join(", ");
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div>
+        <Label>Día y hora</Label>
+        {/* H05 — selectores en vez de texto libre */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <select value={p.day} onChange={(e) => actions.updateSchedule(p.id, { day: Number(e.target.value) })} aria-label="Día de publicación" style={{ ...SELECT, flex: 1 }}>
+            {DAY_NAMES_FULL.map((d, i) => <option key={d} value={i}>{d}</option>)}
+          </select>
+          <input type="time" value={p.time} onChange={(e) => actions.updateSchedule(p.id, { time: e.target.value })} aria-label="Hora de publicación" style={{ ...SELECT, width: 118 }} />
+        </div>
+        <Hint>{p.time ? `Sale el ${DAY_NAMES_FULL[p.day].toLowerCase()} a las ${p.time}${activeNames ? ` en ${activeNames}` : ""}.` : "Sin hora: el asistente sugiere la mejor."}</Hint>
+      </div>
+      <div>
+        <Label>Publicar en</Label>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+          {p.platforms.map((t) => {
+            const on = !s.pubOff[t];
+            return (
+              <button
+                key={t}
+                className="press-sm"
+                onClick={() => actions.togglePub(t)}
+                aria-pressed={on}
+                style={{
+                  all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: "7px 13px", borderRadius: 999,
+                  border: `1.5px solid ${on ? "var(--tem-orange)" : "var(--tem-ink)"}`,
+                  background: on ? "var(--tem-orange)" : "var(--tem-surface)", color: on ? "#fff" : "var(--tem-ink)",
+                }}
+              >
+                {PLATFORM_LABEL[t]}
+              </button>
+            );
+          })}
+        </div>
+        <Hint warn={activeCount === 0}>
+          {activeCount === 0 ? "Activa al menos una red para poder programar." : "Toca una red para quitarla o volver a incluirla."}
+        </Hint>
+      </div>
+      {p.final_url && (
+        <div>
+          <Label>Video final</Label>
+          <a href={p.final_url} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 600, color: "var(--tem-orange)", wordBreak: "break-all" }}>{p.final_url}</a>
+        </div>
+      )}
+      <Hint>Por ahora publicas tú: descarga la imagen, copia el caption y sube el video final.</Hint>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  6 · Publicado                                                              */
+/* -------------------------------------------------------------------------- */
+
+const EMPTY_RESULTS: Results = { views: null, likes: null, saves: null, comments: null, learned: "" };
+
+export function PublicadoPanel({ p, extra }: { p: Proposal; extra?: React.ReactNode }) {
+  const { actions } = useStore();
+  const r = p.results ?? EMPTY_RESULTS;
+  const setR = (patch: Partial<Results>) => actions.updateFields(p.id, { results: { ...r, ...patch } });
+  const fields: { k: keyof Omit<Results, "learned">; label: string }[] = [
+    { k: "views", label: "Vistas" }, { k: "likes", label: "Me gusta" }, { k: "saves", label: "Guardados" }, { k: "comments", label: "Comentarios" },
+  ];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {p.published_at && <Hint>Publicada el {new Date(p.published_at).toLocaleDateString("es-CL", { day: "numeric", month: "long" })}.</Hint>}
+      <div>
+        <Label right="se guarda solo">Resultados</Label>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+          {fields.map(({ k, label }) => (
+            <div key={k}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--tem-handle)", marginBottom: 4 }}>{label}</div>
+              <NumberInput value={r[k]} onCommit={(v) => setR({ [k]: v })} ariaLabel={label} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <Label>¿Qué aprendimos?</Label>
+        <TextArea value={r.learned} onCommit={(v) => setR({ learned: v })} placeholder="Tres líneas: qué funcionó, qué no y qué probar la próxima vez." ariaLabel="Qué aprendimos" rows={3} />
+        {extra}
+      </div>
+    </div>
+  );
+}
+
+function NumberInput({ value, onCommit, ariaLabel }: { value: number | null; onCommit: (v: number | null) => void; ariaLabel: string }) {
+  return (
+    <TextInput
+      value={value == null ? "" : String(value)}
+      onCommit={(v) => {
+        const n = Number(v.replace(/[^\d]/g, ""));
+        onCommit(v.trim() === "" || Number.isNaN(n) ? null : n);
+      }}
+      placeholder="—"
+      ariaLabel={ariaLabel}
+      style={{ textAlign: "center", fontWeight: 600 }}
+    />
+  );
+}
