@@ -1,10 +1,10 @@
 import { useStore } from "../store";
-import { CONNECTABLE, NET_HANDLES } from "../data/mock";
+import Connections from "../components/Connections";
 import { supabase } from "../lib/supabase";
 import { changePassword } from "../auth/changePassword";
 
 export default function MobileProfile() {
-  const { connections, actions } = useStore();
+  const { actions } = useStore();
 
   return (
     <div style={{ padding: "6px 18px 0" }}>
@@ -39,32 +39,7 @@ export default function MobileProfile() {
         </button>
       </div>
 
-      <div style={{ margin: "24px 0 12px", fontWeight: 600, fontSize: 17 }}>Redes conectadas</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {CONNECTABLE.map((net) => {
-          const on = !!connections[net];
-          const statusColor = on ? "var(--tem-orange)" : "var(--tem-handle)";
-          return (
-            <div key={net} style={{ background: "var(--tem-surface)", borderRadius: 18, padding: "16px 18px", boxShadow: "var(--sh-card)", display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{net}</div>
-                <div style={{ fontWeight: 400, fontSize: 12, color: statusColor }}>{on ? NET_HANDLES[net] : "Sin conectar"}</div>
-              </div>
-              <button
-                className="press-sm"
-                onClick={() => actions.toggleConn(net)}
-                style={{
-                  all: "unset", cursor: "pointer", fontSize: 13, fontWeight: 500, padding: "9px 16px", borderRadius: 12,
-                  border: `1.5px solid ${on ? "var(--tem-ink)" : "var(--tem-orange)"}`,
-                  background: on ? "var(--tem-surface)" : "var(--tem-orange)", color: on ? "var(--tem-ink)" : "#fff",
-                }}
-              >
-                {on ? "Desconectar" : "Conectar"}
-              </button>
-            </div>
-          );
-        })}
-      </div>
+      <Connections compact />
 
       {/* bloque newsletter */}
       <div style={{ marginTop: 24, background: "var(--tem-ink)", borderRadius: 22, padding: 22, color: "#fff" }}>

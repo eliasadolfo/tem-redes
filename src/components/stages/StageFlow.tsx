@@ -117,7 +117,7 @@ export function AdvanceBar({ p, stacked = false }: { p: Proposal; stacked?: bool
   const active = p.platforms.filter((t) => !s.pubOff[t]).length;
   const missing = next ? missingFor(p, next, active) : null;
 
-  const primaryLabel = next === "listo" ? "Programar publicación" : next ? `Pasar a ${STAGE_LABEL[next]}` : "Ciclo cerrado";
+  const primaryLabel = next === "listo" ? "Programar publicación" : next === "publicado" ? "Marcar como publicada" : next ? `Pasar a ${STAGE_LABEL[next]}` : "Ciclo cerrado";
   const onPrimary = () => {
     if (!next) return;
     if (next === "listo") actions.publishNow();

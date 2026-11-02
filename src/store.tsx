@@ -11,6 +11,7 @@ import {
 import type {
   ChatMessage,
   CheckItem,
+  ConnectionDetail,
   DesktopView,
   EditMode,
   Grain,
@@ -47,6 +48,7 @@ import {
   type GenerateOptions,
 } from "./lib/ai";
 import { PLATFORM_LABEL } from "./lib/platforms";
+import { TAG_TO_NETWORK, fetchConnectionStatus, hasPublishing, publishPiece as publishViaRobot, startConnect } from "./lib/publish";
 import { STAGE_LABEL, missingFor, newItem, statusForStage } from "./lib/stages";
 
 /** H09 — el error dice qué pasó y cómo seguir, sin códigos técnicos. */
@@ -72,6 +74,9 @@ interface State {
   // datos
   proposals: Proposal[];
   connections: Record<string, boolean>;
+  connDetails: Record<string, ConnectionDetail>; // handle, última revisión, error
+  connChecking: boolean; // "Revisar conexiones" en curso
+  publishing: string | null; // id de la pieza que se está publicando
   // calendario
   calWeekStart: number;
   calPickerOpen: boolean;
@@ -112,6 +117,9 @@ const initialState: State = {
   chat: [],
   proposals: INITIAL_PROPOSALS,
   connections: { Instagram: true, TikTok: true, YouTube: false, LinkedIn: false },
+  connDetails: {},
+  connChecking: false,
+  publishing: null,
   calWeekStart: new Date(2026, 6, 20, 12).getTime(),
   calPickerOpen: false,
   calPickerY: 2026,
@@ -195,6 +203,12 @@ interface Actions {
   setLib: (filter: string) => void;
   // conexiones
   toggleConn: (net: Network) => void;
+  /** Lee el estado real de las redes (Upload-Post) y lo guarda. */
+  refreshConnections: () => Promise<void>;
+  /** Abre la autorización oficial de una red. */
+  connectNetwork: (net: Network) => Promise<void>;
+  /** Publica (o programa si `when` es ISO futuro) la pieza en sus redes activas. Devuelve `true` si todo salió bien. */
+  publishPiece: (id: string, when?: string | null) => Promise<boolean>;
   // IA
   generate: (opts?: GenerateOptions) => Promise<void>;
   /** Pide ideas nuevas al asistente a partir del tema de la semana. */
@@ -585,6 +599,73 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         patch((prev) => ({ connections: { ...prev.connections, [net]: next } }));
         void updateConnection(net, next);
       },
+      refreshConnections: async () => {
+        if (sRef.current.connChecking) return;
+        patch({ connChecking: true });
+        try {
+          if (hasPublishing) {
+            const r = await fetchConnectionStatus();
+            const connections: Record<string, boolean> = {};
+            const connDetails: Record<string, ConnectionDetail> = {};
+            const now = new Date().toISOString();
+            for (const [net, c] of Object.entries(r.connections)) {
+              connections[net] = c.connected;
+              connDetails[net] = { connected: c.connected, handle: c.handle, checked_at: now, error: c.reauth ? "Hay que volver a conectar" : null };
+            }
+            patch({ connections, connDetails });
+            const n = Object.values(connections).filter(Boolean).length;
+            flash(n === 0 ? "Ninguna red conectada todavía" : `${n} ${n === 1 ? "red conectada" : "redes conectadas"}`);
+          } else {
+            const conns = await fetchConnections();
+            if (conns) {
+              patch({ connDetails: conns, connections: Object.fromEntries(Object.entries(conns).map(([k, v]) => [k, v.connected])) });
+            }
+          }
+        } catch (e) {
+          flash(`No pude revisar las redes: ${(e as Error).message}`);
+        } finally {
+          patch({ connChecking: false });
+        }
+      },
+      connectNetwork: async (net) => {
+        try {
+          const r = await startConnect(net);
+          window.location.assign(r.authorize_url);
+        } catch (e) {
+          flash(`No pude abrir la conexión de ${net}: ${(e as Error).message}`);
+        }
+      },
+      publishPiece: async (id, when) => {
+        const p = sRef.current.proposals.find((x) => x.id === id);
+        if (!p || sRef.current.publishing) return false;
+        const nets = [...new Set(p.platforms.filter((t) => !sRef.current.pubOff[t]).map((t) => TAG_TO_NETWORK[t]).filter((n): n is Network => Boolean(n)))];
+        if (nets.length === 0) { flash("Elige al menos una red"); return false; }
+        const notConnected = nets.filter((n) => !sRef.current.connections[n]);
+        if (notConnected.length) { flash(`Primero conecta ${notConnected.join(", ")} en Perfil`); return false; }
+        patch({ publishing: id });
+        try {
+          const r = await publishViaRobot(id, nets, when);
+          const before: ProposalFields = { posts: p.posts ?? null, stage: p.stage, status: p.status, published_at: p.published_at ?? null };
+          const fields: ProposalFields = { posts: r.posts };
+          if (r.published) { fields.stage = "publicado"; fields.status = statusForStage("publicado"); fields.published_at = new Date().toISOString(); }
+          // El robot ya escribió en la base; aquí solo reflejamos en pantalla.
+          patch((prev) => ({ proposals: prev.proposals.map((x) => (x.id === id ? { ...x, ...(Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v ?? undefined])) as Partial<Proposal>) } : x)) }));
+          const fails = Object.entries(r.posts).filter(([, v]) => !v.ok);
+          if (fails.length) {
+            flash(`Publicado con errores: ${fails.map(([k, v]) => `${k}: ${v.error ?? "sin detalle"}`).join(" · ")}`);
+          } else if (r.scheduled) {
+            flash("Programada en las redes");
+          } else {
+            flash("Publicada en las redes", () => applyFields(id, before));
+          }
+          return r.ok;
+        } catch (e) {
+          flash(`No se pudo publicar: ${(e as Error).message}`);
+          return false;
+        } finally {
+          patch({ publishing: null });
+        }
+      },
       generate,
       // Encargo "Ideas": con el webhook genérico; si solo existe el generador de propuestas, lo usa.
       generateIdeas: async (tema) => {
@@ -688,8 +769,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (!alive) return;
       const upd: Partial<State> = { loading: false };
       if (props) upd.proposals = props;
-      if (conns) upd.connections = conns;
+      if (conns) {
+        upd.connDetails = conns;
+        upd.connections = Object.fromEntries(Object.entries(conns).map(([k, v]) => [k, v.connected]));
+      }
       patch(upd);
+      // Vuelta de la autorización de una red (?conectada=Instagram): avisar y revisar.
+      const q = new URLSearchParams(window.location.search);
+      const back = q.get("conectada");
+      if (back) {
+        const status = q.get("connect_status");
+        window.history.replaceState({}, "", window.location.pathname);
+        if (status === "success" || !status) flash(`${back}: autorización completada. Revisando…`);
+        else flash(`${back}: la conexión no se completó (${q.get("error_code") ?? status}).`);
+        patch({ view: "settings", tab: "perfil" });
+        void actions.refreshConnections();
+      }
     })();
     return () => {
       alive = false;

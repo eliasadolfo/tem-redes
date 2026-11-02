@@ -31,6 +31,8 @@ jobs:
           VITE_N8N_GENERAR_URL: ${{ secrets.N8N_GENERAR_URL }}
           VITE_N8N_AJUSTAR_URL: ${{ secrets.N8N_AJUSTAR_URL }}
           VITE_N8N_IA_URL: ${{ secrets.N8N_IA_URL }}
+          # URL pública del webhook de publicación (no es secreto: exige el token de sesión de Elías)
+          VITE_N8N_PUBLICAR_URL: https://devn8n.tuescuelademarcas.cl/webhook/tem-redes/publicar
         run: npm run build
       - name: Publicar en gh-pages
         uses: peaceiris/actions-gh-pages@v4

@@ -1,10 +1,10 @@
 import { useStore } from "../store";
-import { CONNECTABLE, NET_HANDLES } from "../data/mock";
+import Connections from "../components/Connections";
 import { supabase } from "../lib/supabase";
 import { changePassword } from "../auth/changePassword";
 
 export default function Profile() {
-  const { connections, actions } = useStore();
+  const { actions } = useStore();
 
   return (
     <div style={{ padding: "32px 40px", maxWidth: 720 }}>
@@ -42,44 +42,7 @@ export default function Profile() {
         </div>
       </div>
 
-      <div style={{ margin: "28px 0 14px", fontWeight: 600, fontSize: 18 }}>Redes conectadas</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {CONNECTABLE.map((net) => {
-          const on = !!connections[net];
-          const statusColor = on ? "var(--tem-orange)" : "var(--tem-handle)";
-          return (
-            <div
-              key={net}
-              style={{ background: "var(--tem-surface)", borderRadius: 18, padding: "18px 20px", boxShadow: "var(--sh-card)", display: "flex", alignItems: "center", gap: 16 }}
-            >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 16 }}>{net}</div>
-                <div style={{ fontWeight: 400, fontSize: 13, color: "var(--tem-handle)" }}>
-                  {on ? NET_HANDLES[net] : "Sin conectar"}
-                </div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 999, background: statusColor }} />
-                <span style={{ fontWeight: 500, fontSize: 13, color: statusColor }}>
-                  {on ? "Conectada" : "No conectada"}
-                </span>
-              </div>
-              <button
-                className="press"
-                onClick={() => actions.toggleConn(net)}
-                style={{
-                  all: "unset", cursor: "pointer", fontSize: 13, fontWeight: 500, padding: "10px 18px", borderRadius: 12,
-                  border: `1.5px solid ${on ? "var(--tem-ink)" : "var(--tem-orange)"}`,
-                  background: on ? "var(--tem-surface)" : "var(--tem-orange)",
-                  color: on ? "var(--tem-ink)" : "#fff",
-                }}
-              >
-                {on ? "Desconectar" : "Conectar"}
-              </button>
-            </div>
-          );
-        })}
-      </div>
+      <Connections />
     </div>
   );
 }

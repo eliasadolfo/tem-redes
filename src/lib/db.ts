@@ -6,11 +6,13 @@
 import { supabase } from "./supabase";
 import type {
   CheckItem,
+  ConnectionDetail,
   EditMode,
   Network,
   Proposal,
   ProposalStatus,
   PlatformTag,
+  PostResult,
   Results,
   Script,
   Stage,
@@ -48,6 +50,7 @@ interface ProposalRow {
   recorded_at: string | null;
   published_at: string | null;
   results: Results | null;
+  posts: Record<string, PostResult> | null;
 }
 
 function rowToProposal(r: ProposalRow): Proposal {
@@ -79,6 +82,7 @@ function rowToProposal(r: ProposalRow): Proposal {
     recorded_at: r.recorded_at ?? undefined,
     published_at: r.published_at ?? undefined,
     results: r.results ?? undefined,
+    posts: r.posts ?? undefined,
   };
 }
 
@@ -113,6 +117,7 @@ export function proposalToRow(p: Proposal): ProposalRow {
     recorded_at: p.recorded_at ?? null,
     published_at: p.published_at ?? null,
     results: p.results ?? null,
+    posts: p.posts ?? null,
   };
 }
 
@@ -131,17 +136,17 @@ export async function fetchProposals(): Promise<Proposal[] | null> {
   return (data as ProposalRow[]).map(rowToProposal);
 }
 
-/** Estado de conexión por red como { [network]: boolean }. */
-export async function fetchConnections(): Promise<Record<string, boolean> | null> {
+/** Conexiones por red con detalle (handle, última revisión, error). */
+export async function fetchConnections(): Promise<Record<string, ConnectionDetail> | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.from("tem_connections").select("network, connected");
+  const { data, error } = await supabase.from("tem_connections").select("network, connected, handle, checked_at, error");
   if (error) {
     console.error("fetchConnections:", error.message);
     return null;
   }
-  const out: Record<string, boolean> = {};
-  for (const row of data as { network: string; connected: boolean }[]) {
-    out[row.network] = row.connected;
+  const out: Record<string, ConnectionDetail> = {};
+  for (const row of data as { network: string; connected: boolean; handle: string | null; checked_at: string | null; error: string | null }[]) {
+    out[row.network] = { connected: row.connected, handle: row.handle ?? "", checked_at: row.checked_at, error: row.error };
   }
   return out;
 }
@@ -166,7 +171,7 @@ export async function updateConnection(network: Network, connected: boolean): Pr
 type EditableKey =
   | "eyebrow" | "line" | "caption" | "tags" | "day" | "time" | "status" | "stage" | "source" | "script"
   | "shots" | "checklist" | "raw_url" | "edit_mode" | "delivery" | "final_url" | "thumbnail_url" | "notes" | "recorded_at"
-  | "published_at" | "results" | "platforms";
+  | "published_at" | "results" | "platforms" | "posts";
 
 /**
  * Campos de la pieza que se pueden actualizar sueltos (ficha, copiloto, tablero).
@@ -178,7 +183,7 @@ export type ProposalFields = { [K in EditableKey]?: Proposal[K] | null };
 const PLAIN_COLUMNS = [
   "eyebrow", "caption", "tags", "day", "time", "status", "stage", "source", "script", "shots",
   "checklist", "raw_url", "edit_mode", "delivery", "final_url", "thumbnail_url", "notes", "recorded_at", "published_at",
-  "results", "platforms",
+  "results", "platforms", "posts",
 ] as const;
 
 /** Actualiza campos editables de una pieza (ficha / copiloto / etapa). */

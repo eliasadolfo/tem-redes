@@ -16,7 +16,8 @@ import {
 } from "../../lib/stages";
 import { EDIT_MODES, checklistFor, deliveryFor, guideFor, suggestedFileName } from "../../lib/formatos";
 import FormatGuide from "../FormatGuide";
-import type { CheckItem, Proposal, Results, Script } from "../../types";
+import { TAG_TO_NETWORK, hasPublishing } from "../../lib/publish";
+import type { CheckItem, Network, PostResult, Proposal, Results, Script } from "../../types";
 import { BTN_GHOST, BTN_SECONDARY, CheckRow, Hint, INPUT, Label, SELECT, TemplateChip, TextArea, TextInput } from "./ui";
 
 /* -------------------------------------------------------------------------- */
@@ -451,7 +452,85 @@ export function ListoPanel({ p }: { p: Proposal }) {
           <a href={p.final_url} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 500, color: "var(--tem-orange)", wordBreak: "break-all" }}>{p.final_url}</a>
         </div>
       )}
-      <Hint>Por ahora publicas tú: descarga la imagen, copia el caption y sube el video final.</Hint>
+      {hasPublishing ? <PublishBlock p={p} /> : <Hint>Por ahora publicas tú: descarga la imagen, copia el caption y sube el video final.</Hint>}
+    </div>
+  );
+}
+
+/** Próxima fecha (ISO) del día/hora de la pieza, siempre en el futuro. */
+function nextSlot(day: number, time: string): string | null {
+  if (!time) return null;
+  const [hh, mm] = time.split(":").map(Number);
+  const d = new Date();
+  d.setSeconds(0, 0);
+  d.setHours(hh, mm, 0, 0);
+  const want = (day + 1) % 7; // 0=lun → getDay 1
+  let delta = (want - d.getDay() + 7) % 7;
+  if (delta === 0 && d.getTime() <= Date.now() + 60_000) delta = 7;
+  d.setDate(d.getDate() + delta);
+  return d.toISOString();
+}
+
+/** Publicar ahora / programar en las redes activas (robot n8n + Upload-Post). */
+function PublishBlock({ p }: { p: Proposal }) {
+  const s = useStore();
+  const { actions } = s;
+  const nets = [...new Set(p.platforms.filter((t) => !s.pubOff[t]).map((t) => TAG_TO_NETWORK[t]).filter((n): n is Network => Boolean(n)))];
+  const notConnected = nets.filter((n) => !s.connections[n]);
+  const busy = s.publishing === p.id;
+  const slot = nextSlot(p.day, p.time);
+  const missing = !p.final_url ? "Falta el link del video final (en Editar)." : nets.length === 0 ? "Activa al menos una red." : notConnected.length ? `Conecta ${notConnected.join(", ")} en Perfil.` : null;
+  const btn = (label: string, onClick: () => void, primary: boolean) => (
+    <button
+      className={primary ? "press" : "press invert-hover"}
+      onClick={onClick}
+      disabled={Boolean(missing) || busy}
+      title={missing ?? label}
+      style={{
+        all: "unset", cursor: "pointer", flex: 1, textAlign: "center", fontSize: 13, fontWeight: 500, padding: "10px 14px", borderRadius: 999, boxSizing: "border-box",
+        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+        background: primary ? "var(--tem-ink)" : "transparent", color: primary ? "#fff" : "var(--tem-ink)", border: primary ? "none" : "1px solid var(--tem-border)",
+      }}
+    >
+      {busy && <span className="spinner" aria-hidden="true" />}
+      {busy ? "Publicando…" : label}
+    </button>
+  );
+  return (
+    <div style={{ background: "var(--tem-bg)", borderRadius: 16, padding: "12px 14px" }}>
+      <Label>Publicar en las redes</Label>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {btn("Publicar ahora", () => void actions.publishPiece(p.id, null), true)}
+        {slot && btn(`Programar · ${DAY_NAMES_FULL[p.day]} ${p.time}`, () => void actions.publishPiece(p.id, slot), false)}
+      </div>
+      <Hint warn={Boolean(missing)}>{missing ?? `Sube el video final a ${nets.join(", ")} con el caption de la pieza. Tarda lo que tarde el video en subir.`}</Hint>
+      {p.posts && <PostsList posts={p.posts} />}
+    </div>
+  );
+}
+
+/** Resultado por red: link, programada o error. */
+function PostsList({ posts }: { posts: Record<string, PostResult> }) {
+  const NAME: Record<string, string> = { instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube", linkedin: "LinkedIn" };
+  return (
+    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+      {Object.entries(posts).map(([k, r]) => (
+        <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 500 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 999, flex: "none", background: r.ok ? "var(--tem-orange)" : "var(--tem-handle)" }} />
+          <span style={{ fontWeight: 600 }}>{NAME[k] ?? k}</span>
+          {r.url ? (
+            <a href={r.url} target="_blank" rel="noreferrer" style={{ color: "var(--tem-orange)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.url}</a>
+          ) : r.scheduled ? (
+            <span style={{ color: "var(--tem-handle)" }}>programada{r.scheduled_date ? ` · ${new Date(r.scheduled_date).toLocaleString("es-CL", { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : ""}</span>
+          ) : r.pending ? (
+            <span style={{ color: "var(--tem-handle)" }}>subiendo…</span>
+          ) : r.ok ? (
+            <span style={{ color: "var(--tem-handle)" }}>publicada</span>
+          ) : (
+            <span style={{ color: "var(--tem-orange)" }}>{r.error ?? "falló"}</span>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -472,6 +551,12 @@ export function PublicadoPanel({ p }: { p: Proposal }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {p.published_at && <Hint>Publicada el {new Date(p.published_at).toLocaleDateString("es-CL", { day: "numeric", month: "long" })}.</Hint>}
+      {p.posts && Object.keys(p.posts).length > 0 && (
+        <div>
+          <Label>En las redes</Label>
+          <PostsList posts={p.posts} />
+        </div>
+      )}
       <div>
         <Label right="se guarda solo">Resultados</Label>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>

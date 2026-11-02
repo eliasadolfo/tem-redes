@@ -90,6 +90,30 @@ export interface Proposal {
   recorded_at?: string; // ISO
   published_at?: string; // ISO
   results?: Results;
+  posts?: Record<string, PostResult>; // resultado de publicación por red (instagram, youtube…)
+}
+
+/** Resultado de publicar en una red (lo escribe el robot de publicación). */
+export interface PostResult {
+  ok: boolean;
+  at: string;
+  url?: string;
+  post_id?: string;
+  publish_id?: string;
+  job_id?: string;
+  scheduled?: boolean;
+  scheduled_date?: string | null;
+  pending?: boolean;
+  request_id?: string;
+  error?: string;
+}
+
+/** Detalle de una conexión de red (tem_connections). */
+export interface ConnectionDetail {
+  connected: boolean;
+  handle: string;
+  checked_at: string | null;
+  error: string | null;
 }
 
 /** Estilo de variante del card 9:16. */
