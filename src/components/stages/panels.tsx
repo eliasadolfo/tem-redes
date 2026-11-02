@@ -1,6 +1,7 @@
 // Paneles por etapa de la ficha de la pieza. Mismos componentes en escritorio y móvil.
 import { useState } from "react";
-import { useStore } from "../../store";
+import { Sparkles } from "lucide-react";
+import { useStore, type AiTask } from "../../store";
 import { DAY_NAMES_FULL } from "../../lib/dates";
 import { PLATFORM_LABEL } from "../../lib/platforms";
 import {
@@ -14,7 +15,7 @@ import {
   parseLine,
 } from "../../lib/stages";
 import type { CheckItem, Proposal, Results, Script } from "../../types";
-import { BTN_GHOST, CheckRow, Hint, INPUT, Label, SELECT, TemplateChip, TextArea, TextInput } from "./ui";
+import { BTN_GHOST, BTN_SECONDARY, CheckRow, Hint, INPUT, Label, SELECT, TemplateChip, TextArea, TextInput } from "./ui";
 
 /* -------------------------------------------------------------------------- */
 /*  1 · Idea                                                                   */
@@ -64,6 +65,24 @@ export function IdeaPanel({ p }: { p: Proposal }) {
 /*  2 · Guion                                                                  */
 /* -------------------------------------------------------------------------- */
 
+/** Botón secundario para un encargo de IA, con spinner mientras trabaja (H01). */
+export function AiButton({ task, label, busyLabel, onClick, title }: { task: AiTask; label: string; busyLabel: string; onClick: () => void; title?: string }) {
+  const { aiBusy } = useStore();
+  const busy = aiBusy === task;
+  return (
+    <button
+      className="press invert-hover"
+      onClick={onClick}
+      disabled={aiBusy !== null}
+      title={title}
+      style={{ ...BTN_SECONDARY, fontSize: 12, padding: "8px 12px" }}
+    >
+      {busy ? <span className="spinner spinner-sm" aria-hidden="true" /> : <Sparkles size={14} strokeWidth={2.4} />}
+      {busy ? busyLabel : label}
+    </button>
+  );
+}
+
 export function GuionPanel({ p }: { p: Proposal }) {
   const { actions } = useStore();
   const s: Script = p.script ?? EMPTY_SCRIPT;
@@ -80,6 +99,16 @@ export function GuionPanel({ p }: { p: Proposal }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <AiButton
+          task="guion"
+          label={s.hook ? "Reescribir guion con IA" : "Escribir guion con IA"}
+          busyLabel="Escribiendo el guion…"
+          onClick={() => void actions.runScript(p.id)}
+          title="Gancho, desarrollo, cierre y tomas a partir de la idea y el formato (se puede deshacer)"
+        />
+        <AiButton task="tomas" label="Sugerir tomas" busyLabel="Pensando tomas…" onClick={() => void actions.runShots(p.id)} title="Reemplaza la lista de tomas (se puede deshacer)" />
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
           <Label>Formato</Label>

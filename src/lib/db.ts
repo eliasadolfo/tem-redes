@@ -156,32 +156,16 @@ export async function updateConnection(network: Network, connected: boolean): Pr
   if (error) console.error("updateConnection:", error.message);
 }
 
-/** Campos de la pieza que se pueden actualizar sueltos (ficha, copiloto, tablero). */
-export type ProposalFields = Partial<
-  Pick<
-    Proposal,
-    | "eyebrow"
-    | "line"
-    | "caption"
-    | "tags"
-    | "day"
-    | "time"
-    | "status"
-    | "stage"
-    | "source"
-    | "script"
-    | "shots"
-    | "checklist"
-    | "raw_url"
-    | "final_url"
-    | "thumbnail_url"
-    | "notes"
-    | "recorded_at"
-    | "published_at"
-    | "results"
-    | "platforms"
-  >
->;
+type EditableKey =
+  | "eyebrow" | "line" | "caption" | "tags" | "day" | "time" | "status" | "stage" | "source" | "script"
+  | "shots" | "checklist" | "raw_url" | "final_url" | "thumbnail_url" | "notes" | "recorded_at"
+  | "published_at" | "results" | "platforms";
+
+/**
+ * Campos de la pieza que se pueden actualizar sueltos (ficha, copiloto, tablero).
+ * `undefined` = no tocar; `null` = vaciar (sirve para deshacer).
+ */
+export type ProposalFields = { [K in EditableKey]?: Proposal[K] | null };
 
 /** Columnas que se copian tal cual (undefined = no tocar; el resto se guarda, null incluido). */
 const PLAIN_COLUMNS = [
