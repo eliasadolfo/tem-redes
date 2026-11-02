@@ -3,7 +3,9 @@ import { useStore } from "../store";
 import { PLATFORM_LABEL } from "../lib/platforms";
 import Teleprompter from "./Teleprompter";
 import { BTN_PRIMARY, BTN_SECONDARY, INPUT, Label } from "./stages/ui";
-import type { Proposal } from "../types";
+import { EDIT_MODES, durationLabel, guideFor } from "../lib/formatos";
+import { deliveryStatus } from "../lib/stages";
+import type { EditMode, Proposal } from "../types";
 
 /**
  * Sesión de grabación: las piezas en Grabar, en lote (H07). Cada una abre el
@@ -16,6 +18,7 @@ export default function RecordSession({ mobile = false }: { mobile?: boolean }) 
   const [open, setOpen] = useState<string | null>(null);
   const [finishing, setFinishing] = useState<string | null>(null);
   const [rawUrl, setRawUrl] = useState("");
+  const [mode, setMode] = useState<EditMode | null>(null);
 
   const current = items.find((p) => p.id === open) ?? null;
   const toFinish = items.find((p) => p.id === finishing) ?? null;
@@ -24,14 +27,22 @@ export default function RecordSession({ mobile = false }: { mobile?: boolean }) 
     setOpen(null);
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
     setRawUrl(p.raw_url ?? "");
+    setMode(p.edit_mode ?? null);
     setFinishing(p.id);
   };
 
   const confirmFinish = () => {
     if (!toFinish) return;
-    actions.finishRecording(toFinish.id, rawUrl);
+    actions.finishRecording(toFinish.id, rawUrl, mode);
     setFinishing(null);
   };
+
+  // Qué faltaría para pasar a Editar con lo que hay en el diálogo (H05: avisar antes de bloquear).
+  const preview: Proposal | null = toFinish
+    ? { ...toFinish, raw_url: rawUrl.trim() || undefined, edit_mode: mode ?? undefined, shots: (toFinish.shots ?? []).map((s) => ({ ...s, done: true })) }
+    : null;
+  const pending = preview ? deliveryStatus(preview).filter((d) => !d.done) : [];
+  const toFinishGuide = toFinish ? guideFor(toFinish.script?.format) : null;
 
   const pad = mobile ? "6px 18px 0" : "32px 40px";
 
@@ -87,12 +98,32 @@ export default function RecordSession({ mobile = false }: { mobile?: boolean }) 
                 className="tem-textarea"
                 style={INPUT}
               />
-              <div style={{ marginTop: 6, fontSize: 11, fontWeight: 500, color: "var(--tem-handle)", lineHeight: 1.4 }}>
-                Se marcan todas las tomas como grabadas y la pieza pasa a Editar. Se puede deshacer.
+            </div>
+            {toFinishGuide?.isVideo && (
+              <div style={{ marginTop: 14 }}>
+                <Label>Modo de edición</Label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {EDIT_MODES.map((m) => {
+                    const on = mode === m.key;
+                    return (
+                      <button key={m.key} className="press-sm" onClick={() => setMode(on ? null : m.key)} aria-pressed={on} title={m.help} style={{
+                        all: "unset", cursor: "pointer", flex: 1, textAlign: "center", padding: "8px 6px", borderRadius: 10, fontSize: 12, fontWeight: 600, boxSizing: "border-box",
+                        border: `1.5px solid ${on ? "var(--tem-orange)" : "var(--tem-ink)"}`, background: on ? "var(--tem-orange)" : "transparent", color: on ? "#fff" : "var(--tem-ink)",
+                      }}>
+                        {m.key} · {m.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+            )}
+            <div style={{ marginTop: 14, fontSize: 11, fontWeight: 500, lineHeight: 1.45, color: pending.length ? "var(--tem-orange)" : "var(--tem-handle)" }}>
+              {pending.length === 0
+                ? "Entrega completa: se marcan las tomas y la pieza pasa a Editar. Se puede deshacer."
+                : `Se guarda lo grabado, pero sigue en Grabar hasta completar la entrega: ${pending.map((d) => d.text.toLowerCase()).join(", ")}.`}
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-              <button className="press" onClick={confirmFinish} style={{ ...BTN_PRIMARY, flex: 1 }}>Pasar a Editar</button>
+              <button className="press" onClick={confirmFinish} style={{ ...BTN_PRIMARY, flex: 1 }}>{pending.length === 0 ? "Pasar a Editar" : "Guardar lo grabado"}</button>
               <button className="press invert-hover" onClick={() => setFinishing(null)} style={BTN_SECONDARY}>Todavía no</button>
             </div>
           </div>
@@ -107,6 +138,9 @@ function SessionCard({ p, onOpen, onDone }: { p: Proposal; onOpen: () => void; o
   const shots = p.shots ?? [];
   const done = shots.filter((s) => s.done).length;
   const dur = p.script?.duration_s;
+  const g = guideFor(p.script?.format);
+  const d = deliveryStatus(p);
+  const ok = d.filter((x) => x.done).length;
   return (
     <div style={{ background: "var(--tem-surface)", borderRadius: 20, padding: 18, boxShadow: "var(--sh-card)", display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -123,9 +157,12 @@ function SessionCard({ p, onOpen, onDone }: { p: Proposal; onOpen: () => void; o
       {p.script?.hook && (
         <div style={{ fontSize: 13, fontWeight: 500, color: "var(--tem-handle)", lineHeight: 1.4 }}>{p.script.hook}</div>
       )}
-      <div style={{ fontSize: 12, fontWeight: 600, color: done === shots.length && shots.length ? "var(--tem-orange)" : "var(--tem-handle)" }}>
+      <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)", lineHeight: 1.4 }}>
+        {g.aspect}{g.duration ? ` · ${durationLabel(g)}` : ""} · {g.frame.split(".")[0]}.
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: ok === d.length ? "var(--tem-orange)" : "var(--tem-handle)" }}>
         {shots.length ? `${done} de ${shots.length} tomas grabadas` : "Sin lista de tomas"}
-        {p.raw_url ? " · bruto subido" : ""}
+        {` · entrega ${ok} de ${d.length}`}
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button className="press invert-hover" onClick={onOpen} style={{ ...BTN_SECONDARY, flex: 1 }}>Abrir teleprompter</button>

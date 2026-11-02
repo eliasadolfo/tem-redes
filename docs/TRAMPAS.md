@@ -25,6 +25,16 @@ Memoria de errores y decisiones no obvias, para que quien siga no vuelva a caer.
 
 ## UI
 
+- **El espejo del estado (`sRef`) tiene que ser sincrónico.** Al principio se actualizaba
+  solo al renderizar (`sRef.current = s`). Dos guardados seguidos (campos con debounce de 600 ms,
+  "texto en pantalla" de varias tomas) leían un estado viejo y se pisaban: la segunda escritura
+  borraba la primera, en pantalla y en Supabase. Ahora `patch()` calcula el estado nuevo a
+  partir de `sRef.current`, lo guarda ahí en el acto y se lo pasa a React; `flash` también usa
+  `patch`. Además `useDebounced` llama siempre a la última versión de `onCommit` (ref), y las
+  tomas se editan con `actions.updateShot` (una toma, estado fresco), no reescribiendo la lista.
+- **Listas por defecto con ids aleatorios.** `checklist`/`delivery` vacíos se reemplazan por la
+  lista del formato en cada render; el primer clic la persiste (ids estables desde ahí). Tratar
+  `[]` como "sin lista", no solo `null`.
 - **Campos que se guardan solos y la IA.** Un `useState` local con debounce pisa lo que
   escribe la IA si no se sincroniza. `useDebounced` (en `stages/ui.tsx`) guarda el último
   valor confirmado en un ref y solo reemplaza el texto local cuando el valor externo cambia

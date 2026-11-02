@@ -2,6 +2,7 @@
 // avanzar y valores por defecto. Fuente única para escritorio y móvil.
 
 import type { CheckItem, HeadlineLine, Proposal, ProposalStatus, Script, Stage } from "../types";
+import { deliveryFor, guideFor } from "./formatos";
 
 export const STAGES: Stage[] = ["idea", "guion", "grabar", "editar", "listo", "publicado"];
 
@@ -19,7 +20,7 @@ export const STAGE_LABEL: Record<Stage, string> = {
 export const STAGE_HELP: Record<Stage, string> = {
   idea: "Material crudo: algo que dijiste, un caso, un dato. Aquí se decide qué vale la pena contar.",
   guion: "Gancho, desarrollo y cierre; formato, duración y la lista de tomas que vas a grabar.",
-  grabar: "Checklist antes de grabar, teleprompter, marcar las tomas hechas y pegar el link del bruto.",
+  grabar: "Hoja de rodaje del formato, checklist, teleprompter, texto en pantalla por toma y la entrega al editor.",
   editar: "Instrucciones de corte, subtítulos, miniatura, caption con hashtags y el link del video final.",
   listo: "Día, hora y redes elegidas. Lo que está aquí sale al calendario.",
   publicado: "Resultados y aprendizaje. Lo aprendido vuelve a Ideas para la próxima pieza.",
@@ -30,7 +31,7 @@ export const STAGE_REQUIREMENT: Record<Stage, string> = {
   idea: "",
   guion: "título y por qué importa",
   grabar: "gancho, desarrollo y al menos una toma",
-  editar: "todas las tomas marcadas o el link del bruto",
+  editar: "toda la entrega al editor marcada (bruto, tomas, textos, modo de edición)",
   listo: "link del video final y caption",
   publicado: "al menos una red activa",
 };
@@ -142,11 +143,8 @@ function missingForStep(p: Proposal, target: Stage, activePlatforms?: number): s
       if (!p.shots || p.shots.length === 0) return "Añade al menos una toma.";
       return null;
     }
-    case "editar": {
-      const allDone = (p.shots ?? []).length > 0 && (p.shots ?? []).every((s) => s.done);
-      if (!allDone && !(p.raw_url ?? "").trim()) return "Marca todas las tomas o pega el link del bruto.";
-      return null;
-    }
+    case "editar":
+      return deliveryMissing(p);
     case "listo": {
       if (!(p.final_url ?? "").trim()) return "Falta el link del video final.";
       if (!(p.caption ?? "").trim()) return "Falta el caption.";
@@ -172,9 +170,9 @@ export function stageSummary(p: Proposal, stage: Stage): string {
       return `${s.format}${dur} · ${(p.shots ?? []).length} tomas`;
     }
     case "grabar": {
-      const shots = p.shots ?? [];
-      const done = shots.filter((s) => s.done).length;
-      return p.raw_url ? "Bruto subido" : shots.length ? `${done} de ${shots.length} tomas grabadas` : "Sin tomas";
+      const d = deliveryStatus(p);
+      const ok = d.filter((x) => x.done).length;
+      return ok === d.length ? "Entrega completa" : `Entrega ${ok} de ${d.length}`;
     }
     case "editar":
       return p.final_url ? "Video final listo" : (p.notes ? "Instrucciones escritas" : "Sin instrucciones de edición");
@@ -186,4 +184,41 @@ export function stageSummary(p: Proposal, stage: Stage): string {
       return `${r.views} vistas`;
     }
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Entrega al editor (como un editor: nada se renderiza a medias)             */
+/* -------------------------------------------------------------------------- */
+
+export interface DeliveryItem extends CheckItem {
+  /** `true` = lo calcula la app a partir de los datos; `false` = lo confirma Elías a mano. */
+  auto: boolean;
+}
+
+/**
+ * Lista completa de la entrega al editor para la pieza: lo automático (guion,
+ * tomas, texto en pantalla, bruto, modo) + lo manual del formato (`p.delivery`).
+ */
+export function deliveryStatus(p: Proposal): DeliveryItem[] {
+  const g = guideFor(p.script?.format);
+  const shots = p.shots ?? [];
+  const done = shots.filter((s) => s.done).length;
+  const auto: DeliveryItem[] = [];
+  const hook = (p.script?.hook ?? "").trim();
+  const body = (p.script?.body ?? "").trim();
+  auto.push({ id: "auto_script", text: "Guion final: gancho y desarrollo", done: Boolean(hook && body), auto: true });
+  if (g.isVideo) {
+    auto.push({ id: "auto_shots", text: shots.length ? `Todas las tomas grabadas (${done} de ${shots.length})` : "Lista de tomas", done: shots.length > 0 && done === shots.length, auto: true });
+    auto.push({ id: "auto_screen", text: "Texto en pantalla anotado en cada toma", done: shots.length > 0 && shots.every((s) => (s.screen ?? "").trim().length > 0), auto: true });
+    auto.push({ id: "auto_mode", text: "Modo de edición elegido (A, B o C)", done: Boolean(p.edit_mode), auto: true });
+  }
+  auto.push({ id: "auto_raw", text: g.isVideo ? "Link del bruto" : "Link del material (fotos, captura o nota)", done: (p.raw_url ?? "").trim().length > 0, auto: true });
+  const manual = (p.delivery?.length ? p.delivery : deliveryFor(p.script?.format)).map((d) => ({ ...d, auto: false }));
+  return [...auto, ...manual];
+}
+
+/** Primera cosa que falta de la entrega, en una frase, o `null` si está completa. */
+export function deliveryMissing(p: Proposal): string | null {
+  const first = deliveryStatus(p).find((d) => !d.done);
+  return first ? `Falta: ${first.text.replace(/ \(\d+ de \d+\)$/, "").toLowerCase()}.` : null;
 }

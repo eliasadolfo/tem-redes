@@ -17,7 +17,7 @@ Campo `stage` en `tem_proposals` (ya migrado en Supabase):
 |---|---|---|---|
 | `idea` | Idea | Material crudo: algo que dijo Elías, un caso, un dato | título (line) + por qué importa |
 | `guion` | Guion | Gancho, desarrollo, cierre/CTA, formato, duración, **lista de tomas** | `script.hook` y `script.body` no vacíos; ≥1 toma |
-| `grabar` | Grabar | Checklist, teleprompter, marcar tomas hechas, pegar link del bruto | todas las tomas `done` o `raw_url` presente |
+| `grabar` | Grabar | Hoja de rodaje del formato (`src/lib/formatos.ts`: maqueta, zonas seguras, encuadre, luz, audio, ritmo, no hacer), checklist por formato, teleprompter, texto en pantalla por toma, modo de edición A/B/C, link del bruto y **entrega al editor** | `deliveryMissing(p) === null`: guion, todas las tomas `done`, `screen` en cada toma, `edit_mode`, `raw_url` y los ítems manuales (`delivery`) marcados. Como un editor: no se renderiza a medias (2-nov-2026, directrices de Producción y Arte de la Oficina de Contenido) |
 | `editar` | Editar | Instrucciones de corte, subtítulos, miniatura, caption + hashtags, link del final | `final_url` + `caption` |
 | `listo` | Listo | Día, hora y redes elegidas | ≥1 red activa |
 | `publicado` | Publicado | Resultados y aprendizaje | — (cierra el ciclo: el aprendizaje vuelve a Ideas) |

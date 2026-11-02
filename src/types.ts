@@ -46,7 +46,11 @@ export interface CheckItem {
   id: string;
   text: string;
   done: boolean;
+  screen?: string; // solo en tomas: texto que irá en pantalla en esa toma
 }
+
+/** Modo de edición (lo define la Oficina de Contenido): A reflexivo, B instructivo, C declaración. */
+export type EditMode = "A" | "B" | "C";
 
 /** Resultados tras publicar + aprendizaje. */
 export interface Results {
@@ -78,6 +82,8 @@ export interface Proposal {
   shots?: CheckItem[];
   checklist?: CheckItem[];
   raw_url?: string; // link del bruto (Drive)
+  edit_mode?: EditMode; // se elige antes de pasar a Editar
+  delivery?: CheckItem[]; // entrega al editor: lo que se confirma a mano
   final_url?: string; // link del video final
   thumbnail_url?: string;
   notes?: string; // instrucciones de edición / por qué importa

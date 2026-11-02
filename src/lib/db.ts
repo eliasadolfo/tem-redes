@@ -6,6 +6,7 @@
 import { supabase } from "./supabase";
 import type {
   CheckItem,
+  EditMode,
   Network,
   Proposal,
   ProposalStatus,
@@ -39,6 +40,8 @@ interface ProposalRow {
   shots: CheckItem[] | null;
   checklist: CheckItem[] | null;
   raw_url: string | null;
+  edit_mode: EditMode | null;
+  delivery: CheckItem[] | null;
   final_url: string | null;
   thumbnail_url: string | null;
   notes: string | null;
@@ -68,6 +71,8 @@ function rowToProposal(r: ProposalRow): Proposal {
     shots: r.shots ?? undefined,
     checklist: r.checklist ?? undefined,
     raw_url: r.raw_url ?? undefined,
+    edit_mode: r.edit_mode ?? undefined,
+    delivery: r.delivery ?? undefined,
     final_url: r.final_url ?? undefined,
     thumbnail_url: r.thumbnail_url ?? undefined,
     notes: r.notes ?? undefined,
@@ -100,6 +105,8 @@ export function proposalToRow(p: Proposal): ProposalRow {
     shots: p.shots ?? null,
     checklist: p.checklist ?? null,
     raw_url: p.raw_url ?? null,
+    edit_mode: p.edit_mode ?? null,
+    delivery: p.delivery ?? null,
     final_url: p.final_url ?? null,
     thumbnail_url: p.thumbnail_url ?? null,
     notes: p.notes ?? null,
@@ -158,7 +165,7 @@ export async function updateConnection(network: Network, connected: boolean): Pr
 
 type EditableKey =
   | "eyebrow" | "line" | "caption" | "tags" | "day" | "time" | "status" | "stage" | "source" | "script"
-  | "shots" | "checklist" | "raw_url" | "final_url" | "thumbnail_url" | "notes" | "recorded_at"
+  | "shots" | "checklist" | "raw_url" | "edit_mode" | "delivery" | "final_url" | "thumbnail_url" | "notes" | "recorded_at"
   | "published_at" | "results" | "platforms";
 
 /**
@@ -170,7 +177,7 @@ export type ProposalFields = { [K in EditableKey]?: Proposal[K] | null };
 /** Columnas que se copian tal cual (undefined = no tocar; el resto se guarda, null incluido). */
 const PLAIN_COLUMNS = [
   "eyebrow", "caption", "tags", "day", "time", "status", "stage", "source", "script", "shots",
-  "checklist", "raw_url", "final_url", "thumbnail_url", "notes", "recorded_at", "published_at",
+  "checklist", "raw_url", "edit_mode", "delivery", "final_url", "thumbnail_url", "notes", "recorded_at", "published_at",
   "results", "platforms",
 ] as const;
 

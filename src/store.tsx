@@ -10,7 +10,9 @@ import {
 } from "react";
 import type {
   ChatMessage,
+  CheckItem,
   DesktopView,
+  EditMode,
   Grain,
   HeadlineLine,
   MetricNet,
@@ -165,8 +167,10 @@ interface Actions {
   setStage: (id: string, stage: Stage) => boolean;
   /** Actualiza campos sueltos de una pieza y los persiste. */
   updateFields: (id: string, fields: ProposalFields) => void;
+  /** Cambia una toma (texto, hecho, texto en pantalla) con el estado fresco: seguro con campos que se guardan solos. */
+  updateShot: (id: string, shotId: string, part: Partial<CheckItem>) => void;
   /** "Grabada ✓": marca todas las tomas, guarda el link del bruto y pasa a Editar (con Deshacer). */
-  finishRecording: (id: string, rawUrl: string) => void;
+  finishRecording: (id: string, rawUrl: string, editMode?: EditMode | null) => boolean;
   /** Crea una idea nueva (entrada rápida o a partir de un aprendizaje). */
   addIdea: (idea: { line: HeadlineLine; why?: string; source?: string; eyebrow?: string }) => Proposal;
   /** Guarda varias piezas nuevas ya armadas (p.ej. ideas generadas por la IA). */
@@ -217,23 +221,25 @@ const StoreContext = createContext<Store | null>(null);
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [s, setS] = useState<State>(initialState);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Espejo del estado actual para leerlo dentro de acciones sin efectos
-  // colaterales en los updaters de setS.
-  const sRef = useRef(s);
-  sRef.current = s;
+  // Espejo SINCRÓNICO del estado: cada patch lo actualiza en el acto y React
+  // recibe ese mismo objeto. Así dos guardados seguidos (campos con debounce,
+  // tomas, checklists) nunca se pisan por leer un estado viejo (TRAMPAS.md).
+  const sRef = useRef<State>(s);
   // Idea sugerida por el encargo "aprendizaje", por pieza, hasta que se use.
   const pendingIdea = useRef<Record<string, { line: HeadlineLine; why: string } | undefined>>({});
 
   const patch = useCallback((p: Partial<State> | ((prev: State) => Partial<State>)) => {
-    setS((prev) => ({ ...prev, ...(typeof p === "function" ? p(prev) : p) }));
+    const next: State = { ...sRef.current, ...(typeof p === "function" ? p(sRef.current) : p) };
+    sRef.current = next;
+    setS(next);
   }, []);
 
   // Toast: 2.4 s para avisos simples; 6 s cuando ofrece "Deshacer".
   const flash = useCallback((text: string, undo: (() => void) | null = null) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    setS((prev) => ({ ...prev, toast: text, undo }));
+    patch({ toast: text, undo });
     toastTimer.current = setTimeout(
-      () => setS((prev) => ({ ...prev, toast: null, undo: null })),
+      () => patch({ toast: null, undo: null }),
       undo ? 6000 : 2400,
     );
   }, []);
@@ -377,29 +383,50 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    const finishRecording = (id: string, rawUrl: string) => {
+    /**
+     * "Grabada": marca las tomas, guarda bruto y modo, y SOLO pasa a Editar si la
+     * entrega al editor está completa (como un editor: no se renderiza a medias).
+     * Devuelve `true` si avanzó.
+     */
+    const updateShot = (id: string, shotId: string, part: Partial<CheckItem>) => {
       const p = sRef.current.proposals.find((x) => x.id === id);
       if (!p) return;
+      applyFields(id, { shots: (p.shots ?? []).map((sh) => (sh.id === shotId ? { ...sh, ...part } : sh)) });
+    };
+
+    const finishRecording = (id: string, rawUrl: string, editMode?: EditMode | null): boolean => {
+      const p = sRef.current.proposals.find((x) => x.id === id);
+      if (!p) return false;
       const before: ProposalFields = {
-        shots: p.shots ?? null, raw_url: p.raw_url ?? null, recorded_at: p.recorded_at ?? null, stage: p.stage, status: p.status,
+        shots: p.shots ?? null, raw_url: p.raw_url ?? null, edit_mode: p.edit_mode ?? null,
+        recorded_at: p.recorded_at ?? null, stage: p.stage, status: p.status,
       };
       const url = rawUrl.trim();
-      applyFields(id, {
+      const fields: ProposalFields = {
         shots: (p.shots ?? []).map((s) => ({ ...s, done: true })),
         raw_url: url || null,
+        edit_mode: editMode === undefined ? (p.edit_mode ?? null) : editMode,
         recorded_at: p.recorded_at ?? new Date().toISOString(),
-        stage: "editar",
-        status: statusForStage("editar"),
-      });
+      };
+      const next: Proposal = { ...p, shots: fields.shots ?? undefined, raw_url: url || undefined, edit_mode: fields.edit_mode ?? undefined };
+      const missing = missingFor(next, "editar");
+      if (missing) {
+        applyFields(id, fields);
+        flash(`Grabada · sigue en Grabar. ${missing}`, () => applyFields(id, before));
+        return false;
+      }
+      applyFields(id, { ...fields, stage: "editar", status: statusForStage("editar") });
       if (sRef.current.work === id) {
         patch((prev) => ({ chat: [...prev.chat, { role: "ai", text: OPEN_TEXT.editar }] }));
       }
       flash("Grabada · pasó a Editar", () => applyFields(id, before));
+      return true;
     };
 
     return {
       setStage,
       updateFields: applyFields,
+      updateShot,
       finishRecording,
       addIdea,
       reject,

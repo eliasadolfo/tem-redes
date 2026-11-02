@@ -59,6 +59,10 @@ function useDebounced(value: string, onCommit: (v: string) => void, ms = 600) {
   const [v, setV] = useState(value);
   const last = useRef(value);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Siempre la última versión del callback: si el padre volvió a renderizar
+  // mientras se escribía, el commit usa datos frescos (no pisa otros campos).
+  const commitRef = useRef(onCommit);
+  commitRef.current = onCommit;
   useEffect(() => {
     if (value !== last.current) {
       last.current = value;
@@ -71,7 +75,7 @@ function useDebounced(value: string, onCommit: (v: string) => void, ms = 600) {
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       last.current = x;
-      onCommit(x);
+      commitRef.current(x);
     }, ms);
   };
   return [v, onChange] as const;

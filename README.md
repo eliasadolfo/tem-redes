@@ -21,7 +21,7 @@ rediseño está en `docs/REDISENO.md`; lo que costó, en `docs/TRAMPAS.md`.
 |---|---|---|
 | **Idea** | Título, por qué importa, de dónde salió | título + por qué importa |
 | **Guion** | Gancho, desarrollo, cierre; formato, duración, lista de tomas | gancho, desarrollo y ≥1 toma |
-| **Grabar** | Checklist, teleprompter, tomas hechas, link del bruto | todas las tomas marcadas o link del bruto |
+| **Grabar** | Hoja de rodaje del formato (maqueta + directrices de la Oficina de Contenido), checklist, teleprompter, texto en pantalla por toma, modo de edición, link del bruto, **entrega al editor** | toda la entrega marcada: guion, tomas grabadas, texto en pantalla en cada toma, modo A/B/C, bruto y los ítems manuales del formato |
 | **Editar** | Instrucciones de corte, caption + hashtags, links del final y la miniatura | link del video final + caption |
 | **Listo** | Día, hora y redes elegidas (sale al calendario) | ≥1 red activa |
 | **Publicado** | Resultados y aprendizaje → vuelve a Ideas | — |
@@ -52,7 +52,9 @@ en `src/lib/stages.ts` (`missingFor`, `nextStage`, `stageSummary`, plantillas).
 ### Campos de `tem_proposals` (v2)
 
 `stage`, `source`, `script` jsonb `{hook, body, cta, duration_s, format}`, `shots` jsonb
-`[{id,text,done}]`, `checklist` jsonb `[{id,text,done}]`, `raw_url`, `final_url`,
+`[{id,text,done,screen?}]` (`screen` = texto en pantalla de esa toma), `checklist` jsonb `[{id,text,done}]`, `raw_url`,
+`edit_mode` (`A` reflexivo · `B` instructivo · `C` declaración), `delivery` jsonb `[{id,text,done}]`
+(ítems manuales de la entrega al editor; los automáticos se calculan en `deliveryStatus`), `final_url`,
 `thumbnail_url`, `notes` (por qué importa / instrucciones de edición), `recorded_at`,
 `published_at`, `results` jsonb `{views, likes, saves, comments, learned}`. Mapeo en
 `src/lib/db.ts` (`rowToProposal`, `proposalToRow`, `updateProposalFields`; `null` vacía un

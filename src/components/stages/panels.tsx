@@ -10,10 +10,12 @@ import {
   HOOK_TEMPLATES,
   SCRIPT_FORMATS,
   SHOT_TEMPLATES,
-  defaultChecklist,
+  deliveryStatus,
   newItem,
   parseLine,
 } from "../../lib/stages";
+import { EDIT_MODES, checklistFor, deliveryFor, guideFor, suggestedFileName } from "../../lib/formatos";
+import FormatGuide from "../FormatGuide";
 import type { CheckItem, Proposal, Results, Script } from "../../types";
 import { BTN_GHOST, BTN_SECONDARY, CheckRow, Hint, INPUT, Label, SELECT, TemplateChip, TextArea, TextInput } from "./ui";
 
@@ -188,17 +190,48 @@ export function GuionPanel({ p }: { p: Proposal }) {
 
 export function GrabarPanel({ p, onTeleprompter }: { p: Proposal; onTeleprompter?: () => void }) {
   const { actions } = useStore();
-  const checklist = p.checklist ?? defaultChecklist();
+  const g = guideFor(p.script?.format);
+  const checklist = p.checklist?.length ? p.checklist : checklistFor(p.script?.format);
   const setChecklist = (next: CheckItem[]) => actions.updateFields(p.id, { checklist: next });
+  const guideTexts = g.before.join("|");
+  const checklistIsGuide = checklist.map((c) => c.text).join("|") === guideTexts;
   const shots = p.shots ?? [];
   const setShots = (next: CheckItem[]) => actions.updateFields(p.id, { shots: next });
   const done = shots.filter((s) => s.done).length;
   const allDone = shots.length > 0 && done === shots.length;
+  const title = `${p.line.pre}${p.line.key}${p.line.post}`;
+  const delivery = deliveryStatus(p);
+  const deliveryOk = delivery.filter((d) => d.done).length;
+  const manual = p.delivery?.length ? p.delivery : deliveryFor(p.script?.format);
+  const setManual = (next: CheckItem[]) => actions.updateFields(p.id, { delivery: next });
+  const [showGuide, setShowGuide] = useState(true);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+      {/* Hoja de rodaje del formato */}
+      <div style={{ border: "1.5px solid var(--tem-ink)", borderRadius: 16, padding: "12px 14px" }}>
+        <button
+          className="press-sm"
+          onClick={() => setShowGuide((v) => !v)}
+          aria-expanded={showGuide}
+          style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", boxSizing: "border-box" }}
+        >
+          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--tem-handle)" }}>
+            Hoja de rodaje · {g.name}
+          </span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--tem-orange)" }}>{showGuide ? "Ocultar" : "Ver"}</span>
+        </button>
+        {showGuide && (
+          <div style={{ marginTop: 12 }}>
+            <FormatGuide g={g} compact />
+          </div>
+        )}
+      </div>
+
       <div>
-        <Label>Antes de grabar</Label>
+        <Label right={checklistIsGuide ? undefined : <button className="press-sm" onClick={() => setChecklist(checklistFor(p.script?.format))} style={{ all: "unset", cursor: "pointer", color: "var(--tem-orange)" }}>Usar la lista del formato</button>}>
+          Antes de grabar
+        </Label>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {checklist.map((c) => (
             <CheckRow key={c.id} checked={c.done} text={c.text} onToggle={() => setChecklist(checklist.map((x) => (x.id === c.id ? { ...x, done: !x.done } : x)))} />
@@ -206,7 +239,7 @@ export function GrabarPanel({ p, onTeleprompter }: { p: Proposal; onTeleprompter
         </div>
       </div>
 
-      {onTeleprompter && (
+      {onTeleprompter && g.isVideo && (
         <button
           className="press invert-hover"
           onClick={onTeleprompter}
@@ -222,12 +255,27 @@ export function GrabarPanel({ p, onTeleprompter }: { p: Proposal; onTeleprompter
       )}
 
       <div>
-        <Label right={shots.length ? `${done} de ${shots.length}` : undefined}>Tomas</Label>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {shots.map((sh) => (
-            <CheckRow key={sh.id} big checked={sh.done} text={sh.text} onToggle={() => setShots(shots.map((x) => (x.id === sh.id ? { ...x, done: !x.done } : x)))} />
+        <Label right={shots.length ? `${done} de ${shots.length}` : undefined}>{g.isVideo ? "Tomas y texto en pantalla" : "Material a entregar"}</Label>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {shots.map((sh, i) => (
+            <div key={sh.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <CheckRow big checked={sh.done} text={sh.text} onToggle={() => setShots(shots.map((x) => (x.id === sh.id ? { ...x, done: !x.done } : x)))} />
+              {g.isVideo && (
+                <div style={{ paddingLeft: 36, display: "flex", flexDirection: "column", gap: 4 }}>
+                  <TextInput
+                    value={sh.screen ?? ""}
+                    onCommit={(v) => actions.updateShot(p.id, sh.id, { screen: v })}
+                    placeholder="Texto en pantalla en esta toma (o «sin texto»)"
+                    ariaLabel={`Texto en pantalla · toma ${i + 1}`}
+                  />
+                  <div style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-handle)", fontVariantNumeric: "tabular-nums" }}>
+                    Archivo: {suggestedFileName(g, title, i + 1)}
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
-          {shots.length === 0 && <Hint warn>No hay tomas: vuelve a Guion y añade al menos una, o pega el link del bruto.</Hint>}
+          {shots.length === 0 && <Hint warn>No hay tomas: vuelve a Guion y añade al menos una.</Hint>}
           {shots.length > 0 && !allDone && (
             <button className="press" onClick={() => setShots(shots.map((x) => ({ ...x, done: true })))} style={{ ...BTN_GHOST, alignSelf: "flex-start" }}>
               Marcar todas como grabadas
@@ -236,10 +284,58 @@ export function GrabarPanel({ p, onTeleprompter }: { p: Proposal; onTeleprompter
         </div>
       </div>
 
+      {g.isVideo && (
+        <div>
+          <Label>Modo de edición</Label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {EDIT_MODES.map((m) => {
+              const on = p.edit_mode === m.key;
+              return (
+                <button
+                  key={m.key}
+                  className="press-sm"
+                  onClick={() => actions.updateFields(p.id, { edit_mode: on ? null : m.key })}
+                  aria-pressed={on}
+                  title={m.help}
+                  style={{
+                    all: "unset", cursor: "pointer", flex: "1 1 120px", padding: "9px 12px", borderRadius: 12, boxSizing: "border-box",
+                    border: `1.5px solid ${on ? "var(--tem-orange)" : "var(--tem-ink)"}`, background: on ? "var(--tem-orange)" : "transparent", color: on ? "#fff" : "var(--tem-ink)",
+                  }}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{m.key} · {m.name}</div>
+                  <div style={{ fontSize: 11, fontWeight: 500, lineHeight: 1.35, marginTop: 2, opacity: on ? 0.9 : 0.75 }}>{m.help}</div>
+                </button>
+              );
+            })}
+          </div>
+          <Hint>Se graba para el modo que corresponde: el editor no empieza sin saberlo.</Hint>
+        </div>
+      )}
+
       <div>
-        <Label>Link del bruto</Label>
+        <Label>{g.isVideo ? "Link del bruto" : "Link del material"}</Label>
         <TextInput value={p.raw_url ?? ""} onCommit={(v) => actions.updateFields(p.id, { raw_url: v.trim() })} placeholder="https://drive.google.com/…" ariaLabel="Link del bruto" />
-        <Hint>El video pesado vive en Drive; aquí solo va el enlace.</Hint>
+        <Hint>El archivo pesado va por AirDrop al Mac y a Drive como respaldo; aquí solo el enlace. Nombre: {g.fileName}</Hint>
+      </div>
+
+      <div style={{ background: "var(--tem-bg)", borderRadius: 16, padding: "12px 14px" }}>
+        <Label right={`${deliveryOk} de ${delivery.length}`}>Entrega al editor</Label>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {delivery.map((d) =>
+            d.auto ? (
+              <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10 }} aria-label={`${d.text}: ${d.done ? "listo" : "falta"}`}>
+                <span style={{ width: 20, height: 20, flex: "none", borderRadius: 7, display: "grid", placeItems: "center", background: d.done ? "var(--tem-orange)" : "transparent", border: `2px solid ${d.done ? "var(--tem-orange)" : "var(--tem-handle)"}` }}>
+                  {d.done && <svg width={11} height={11} viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5 5 9.5 10 3" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                </span>
+                <span style={{ flex: 1, fontSize: 13, fontWeight: 500, lineHeight: 1.35, opacity: d.done ? 0.55 : 1, textDecoration: d.done ? "line-through" : "none" }}>{d.text}</span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--tem-handle)" }}>auto</span>
+              </div>
+            ) : (
+              <CheckRow key={d.id} checked={d.done} text={d.text} onToggle={() => setManual(manual.map((x) => (x.id === d.id ? { ...x, done: !x.done } : x)))} />
+            ),
+          )}
+        </div>
+        <Hint>Como en un editor: nada pasa a Editar hasta que todo esté marcado. Así el asistente no renderiza a medias.</Hint>
       </div>
     </div>
   );
