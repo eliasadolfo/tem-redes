@@ -1,7 +1,7 @@
 // Línea de producción: orden de etapas, nombres visibles, requisitos para
 // avanzar y valores por defecto. Fuente única para escritorio y móvil.
 
-import type { CheckItem, Proposal, ProposalStatus, Script, Stage } from "../types";
+import type { CheckItem, HeadlineLine, Proposal, ProposalStatus, Script, Stage } from "../types";
 
 export const STAGES: Stage[] = ["idea", "guion", "grabar", "editar", "listo", "publicado"];
 
@@ -91,6 +91,16 @@ export const SHOT_TEMPLATES = [
   "Cierre con llamado a la acción",
   "B-roll: pantalla del formulario / documento",
 ];
+
+/**
+ * Convierte una línea escrita a mano en titular: la parte entre *asteriscos*
+ * es la palabra clave (va en naranja). Sin asteriscos, todo es `pre`.
+ */
+export function parseLine(text: string): HeadlineLine {
+  const m = /^(.*?)\*([^*]+)\*(.*)$/.exec(text);
+  if (!m) return { pre: text, key: "", post: "" };
+  return { pre: m[1], key: m[2], post: m[3] };
+}
 
 /** Texto para leer en el teleprompter: el guion unido en orden. */
 export function scriptText(p: Proposal): string {

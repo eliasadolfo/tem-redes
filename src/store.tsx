@@ -167,6 +167,8 @@ interface Actions {
   toggleConn: (net: Network) => void;
   // IA
   generate: (opts?: GenerateOptions) => Promise<void>;
+  /** Pide ideas nuevas al asistente a partir del tema de la semana. */
+  generateIdeas: (tema: string) => Promise<void>;
   updateCaption: (id: string, caption: string) => void;
   /** Cambia día (0-4) y/o hora ("HH:MM" o "") de una pieza. */
   updateSchedule: (id: string, s: { day?: number; time?: string }) => void;
@@ -241,6 +243,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       applyFields(id, next);
       flash(`Pasó a ${STAGE_LABEL[stage]}`, () => applyFields(id, before));
       return true;
+    };
+
+    // IA: pide propuestas nuevas a Claude, las guarda como ideas y las muestra
+    const generate = async (opts?: GenerateOptions) => {
+      if (sRef.current.generating) return;
+      patch({ generating: true });
+      try {
+        const existentes = sRef.current.proposals
+          .filter((p) => p.status !== "rejected")
+          .map((p) => p.line.pre + p.line.key + p.line.post);
+        const nuevas = (await generateProposals({ count: 5, ...opts, existentes })).map((p) => ({
+          ...p,
+          stage: "idea" as const,
+          status: "proposal" as const,
+          source: opts?.tema ? `Tema de la semana: ${opts.tema}` : "Propuesta del asistente",
+        }));
+        await insertProposals(nuevas);
+        patch((prev) => ({ proposals: [...prev.proposals, ...nuevas], view: "ideas" }));
+        flash(`${nuevas.length} ideas nuevas`);
+      } catch (e) {
+        console.error("generate:", e);
+        // H09: qué pasó + cómo seguir, sin códigos técnicos
+        flash("El asistente no respondió. Revisa tu conexión y vuelve a intentar.");
+      } finally {
+        patch({ generating: false });
+      }
     };
 
     return {
@@ -439,31 +467,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         patch((prev) => ({ connections: { ...prev.connections, [net]: next } }));
         void updateConnection(net, next);
       },
-      // IA: pide propuestas nuevas a Claude, las guarda y las muestra
-      generate: async (opts) => {
-        if (sRef.current.generating) return;
-        patch({ generating: true });
-        try {
-          const existentes = sRef.current.proposals
-            .filter((p) => p.status !== "rejected")
-            .map((p) => p.line.pre + p.line.key + p.line.post);
-          const nuevas = (await generateProposals({ count: 5, ...opts, existentes })).map((p) => ({
-            ...p,
-            stage: "idea" as const,
-            status: "proposal" as const,
-            source: opts?.tema ? `Tema de la semana: ${opts.tema}` : "Propuesta del asistente",
-          }));
-          await insertProposals(nuevas);
-          patch((prev) => ({ proposals: [...prev.proposals, ...nuevas], view: "ideas" }));
-          flash(`${nuevas.length} ideas nuevas`);
-        } catch (e) {
-          console.error("generate:", e);
-          // H09: qué pasó + cómo seguir, sin códigos técnicos
-          flash("El asistente no respondió. Revisa tu conexión y vuelve a intentar.");
-        } finally {
-          patch({ generating: false });
-        }
-      },
+      generate,
+      // Hasta que exista el encargo "Ideas" (fase 4), usa el generador de propuestas.
+      generateIdeas: (tema) => generate({ tema }),
     };
   }, [patch, flash]);
 

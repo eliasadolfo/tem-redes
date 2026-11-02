@@ -1,8 +1,9 @@
 import { useStore } from "../store";
 import Sidebar from "./Sidebar";
+import Tablero from "./Tablero";
+import Ideas from "./Ideas";
 import Calendar from "./Calendar";
 import Copilot from "./Copilot";
-import Inbox from "./Inbox";
 import Library from "./Library";
 import Metrics from "./Metrics";
 import Newsletter from "./Newsletter";
@@ -13,8 +14,10 @@ export default function DesktopApp() {
 
   let content;
   if (work) content = <Copilot />;
-  else if (view === "calendar" || view === "tablero" || view === "grabar") content = <Calendar />;
-  else if (view === "ideas") content = <Inbox />;
+  else if (view === "tablero") content = <Tablero />;
+  else if (view === "ideas") content = <Ideas />;
+  else if (view === "grabar") content = <Tablero />; // sesión de grabación: fase 5
+  else if (view === "calendar") content = <Calendar />;
   else if (view === "library") content = <Library />;
   else if (view === "metrics") content = <Metrics />;
   else if (view === "newsletter") content = <Newsletter />;

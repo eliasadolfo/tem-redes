@@ -2,18 +2,20 @@ import logoBlack from "../assets/img/logo-tem-black.png";
 import { useStore } from "../store";
 import type { DesktopView } from "../types";
 
-const NAV: { key: DesktopView; label: string }[] = [
-  { key: "calendar", label: "Calendario" },
-  { key: "ideas", label: "Ideas" },
-  { key: "library", label: "Biblioteca" },
-  { key: "metrics", label: "Métricas" },
-  { key: "newsletter", label: "Newsletter" },
-  { key: "settings", label: "Perfil" },
+const NAV: { key: DesktopView; label: string; hint: string }[] = [
+  { key: "tablero", label: "Tablero", hint: "Todas las piezas por etapa" },
+  { key: "ideas", label: "Ideas", hint: "Anotar y generar ideas" },
+  { key: "grabar", label: "Grabar", hint: "Sesión de grabación con teleprompter" },
+  { key: "calendar", label: "Calendario", hint: "Lo programado y lo publicado" },
+  { key: "library", label: "Biblioteca", hint: "Piezas publicadas" },
+  { key: "metrics", label: "Métricas", hint: "Alcance por red" },
+  { key: "newsletter", label: "Newsletter", hint: "Carta de la semana" },
+  { key: "settings", label: "Perfil", hint: "Redes y contraseña" },
 ];
 
 export default function Sidebar() {
   const { view, work, proposals, actions } = useStore();
-  const pending = proposals.filter((p) => p.status === "proposal").length;
+  const toRecord = proposals.filter((p) => p.status !== "rejected" && p.stage === "grabar").length;
   const activeKey = work ? null : view;
 
   return (
@@ -46,6 +48,7 @@ export default function Sidebar() {
               key={item.key}
               className="press"
               onClick={() => actions.go(item.key)}
+              title={item.hint}
               style={{
                 all: "unset",
                 boxSizing: "border-box",
@@ -62,8 +65,9 @@ export default function Sidebar() {
               }}
             >
               <span>{item.label}</span>
-              {item.key === "ideas" && pending > 0 && (
+              {item.key === "grabar" && toRecord > 0 && (
                 <span
+                  title={`${toRecord} por grabar`}
                   style={{
                     background: "var(--tem-orange)",
                     color: "#fff",
@@ -77,7 +81,7 @@ export default function Sidebar() {
                     placeItems: "center",
                   }}
                 >
-                  {pending}
+                  {toRecord}
                 </span>
               )}
             </button>

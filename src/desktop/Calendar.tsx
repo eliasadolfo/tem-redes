@@ -7,13 +7,13 @@ import {
   weekRangeLabel,
 } from "../lib/dates";
 import CalendarPopover from "../components/CalendarPopover";
-import { platformsStr } from "../lib/platforms";
-import type { PlatformTag, Proposal } from "../types";
+import PieceCard from "../components/PieceCard";
+import type { PlatformTag } from "../types";
 
 const TODAY = new Date(2026, 6, 23, 12).getTime();
 const PLAT_FILTERS: (PlatformTag | "Todas")[] = ["Todas", "IG", "TikTok", "Shorts", "YouTube", "in"];
 const PLAT_FILTER_LABEL: Record<string, string> = {
-  Todas: "Todas", IG: "IG", TikTok: "TikTok", Shorts: "Shorts", YouTube: "YouTube", in: "LinkedIn",
+  Todas: "Todas", IG: "Instagram", TikTok: "TikTok", Shorts: "Shorts", YouTube: "YouTube", in: "LinkedIn",
 };
 
 export default function Calendar() {
@@ -22,8 +22,12 @@ export default function Calendar() {
   const [platFilter, setPlatFilter] = useState<PlatformTag | "Todas">("Todas");
 
   const monday = noon(s.calWeekStart);
+  // Solo lo programado: piezas en Listo o Publicado (lo demás vive en el tablero).
   const visible = s.proposals.filter(
-    (p) => p.status !== "rejected" && (platFilter === "Todas" || p.platforms.includes(platFilter)),
+    (p) =>
+      p.status !== "rejected" &&
+      (p.stage === "listo" || p.stage === "publicado") &&
+      (platFilter === "Todas" || p.platforms.includes(platFilter)),
   );
 
   const arrowBtn: React.CSSProperties = {
@@ -34,6 +38,9 @@ export default function Calendar() {
   return (
     <div style={{ padding: "32px 40px" }}>
       <div className="eyebrow">Tu semana</div>
+      <div style={{ marginTop: 4, fontSize: 13, fontWeight: 500, color: "var(--tem-handle)" }}>
+        Aquí aparece lo que está en Listo o Publicado. Lo que se produce vive en el tablero.
+      </div>
 
       {/* fila de controles */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 10, flexWrap: "wrap" }}>
@@ -113,7 +120,7 @@ export default function Calendar() {
               ) : items.length === 0 ? (
                 <EmptySlot />
               ) : (
-                items.map((p) => <PieceCard key={p.id} p={p} onOpen={() => actions.openWork(p.id)} />)
+                items.map((p) => <PieceCard key={p.id} p={p} showStage />)
               )}
             </div>
           );
@@ -144,56 +151,7 @@ function EmptySlot() {
         textAlign: "center", lineHeight: 1.4,
       }}
     >
-      Día libre · genera propuestas o mueve una pieza aquí
+      Día libre · pasa una pieza a Listo para que aparezca aquí
     </div>
-  );
-}
-
-function PieceCard({ p, onOpen }: { p: Proposal; onOpen: () => void }) {
-  const scheduled = p.status === "scheduled";
-  const platStr = platformsStr(p.platforms);
-  const title = p.line.pre + p.line.key + p.line.post;
-
-  if (scheduled) {
-    return (
-      <button
-        className="press"
-        onClick={onOpen}
-        title={`Programada · ${platStr}${p.time ? " · " + p.time : ""}. Clic para editar.`}
-        style={{
-          all: "unset", cursor: "pointer", boxSizing: "border-box",
-          background: "var(--tem-ink)", borderRadius: 16, padding: "14px 15px", display: "block",
-        }}
-      >
-        <div style={{ fontSize: 10, color: "rgba(255,255,255,.55)", marginBottom: 8 }}>
-          {platStr}{p.time ? " · " + p.time : ""}
-        </div>
-        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".12em", color: "var(--tem-orange)" }}>
-          {p.eyebrow}
-        </div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", marginTop: 4, lineHeight: 1.2 }}>{title}</div>
-      </button>
-    );
-  }
-
-  return (
-    <button
-      className="press"
-      onClick={onOpen}
-      title={`Propuesta del asistente · ${platStr}. Clic para revisar y aprobar.`}
-      style={{
-        all: "unset", cursor: "pointer", boxSizing: "border-box",
-        background: "var(--tem-surface)", border: "1.5px dashed var(--tem-orange)",
-        borderRadius: 16, padding: "14px 15px", display: "block",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-        <span style={{ width: 6, height: 6, borderRadius: 999, background: "var(--tem-orange)" }} />
-        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".12em", color: "var(--tem-orange)" }}>
-          PROPUESTA
-        </span>
-      </div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: "var(--tem-ink)", lineHeight: 1.2 }}>{title}</div>
-    </button>
   );
 }
