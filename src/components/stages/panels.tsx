@@ -249,11 +249,16 @@ export function GrabarPanel({ p, onTeleprompter }: { p: Proposal; onTeleprompter
 /*  4 · Editar                                                                 */
 /* -------------------------------------------------------------------------- */
 
-export function EditarPanel({ p, extra }: { p: Proposal; extra?: React.ReactNode }) {
+export function EditarPanel({ p }: { p: Proposal }) {
   const { actions } = useStore();
   const tagsText = p.tags.join(" ");
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {p.raw_url && (
+        <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)" }}>
+          Bruto: <a href={p.raw_url} target="_blank" rel="noreferrer" style={{ color: "var(--tem-orange)", fontWeight: 600, wordBreak: "break-all" }}>{p.raw_url}</a>
+        </div>
+      )}
       <div>
         <Label right="se guarda solo">Instrucciones de edición</Label>
         <TextArea
@@ -261,9 +266,13 @@ export function EditarPanel({ p, extra }: { p: Proposal; extra?: React.ReactNode
           onCommit={(v) => actions.updateFields(p.id, { notes: v })}
           placeholder="Cortes, ritmo, dónde van los subtítulos, qué texto aparece en pantalla…"
           ariaLabel="Instrucciones de edición"
-          rows={5}
+          rows={6}
         />
-        {extra}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+          <AiButton task="cortes" label="Proponer cortes" busyLabel="Pensando los cortes…" onClick={() => void actions.runCuts(p.id)} title="Añade cortes con tiempo y estilo de subtítulos a las instrucciones (se puede deshacer)" />
+          <AiButton task="caption" label={p.caption ? "Reescribir caption" : "Escribir caption"} busyLabel="Escribiendo el caption…" onClick={() => void actions.runCaption(p.id)} title="Caption y hashtags para las redes de la pieza (se puede deshacer)" />
+        </div>
+        <Hint>El corte, los subtítulos y las versiones se hacen fuera de la app; aquí quedan las instrucciones y los links.</Hint>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
@@ -357,7 +366,7 @@ export function ListoPanel({ p }: { p: Proposal }) {
 
 const EMPTY_RESULTS: Results = { views: null, likes: null, saves: null, comments: null, learned: "" };
 
-export function PublicadoPanel({ p, extra }: { p: Proposal; extra?: React.ReactNode }) {
+export function PublicadoPanel({ p }: { p: Proposal }) {
   const { actions } = useStore();
   const r = p.results ?? EMPTY_RESULTS;
   const setR = (patch: Partial<Results>) => actions.updateFields(p.id, { results: { ...r, ...patch } });
@@ -381,7 +390,18 @@ export function PublicadoPanel({ p, extra }: { p: Proposal; extra?: React.ReactN
       <div>
         <Label>¿Qué aprendimos?</Label>
         <TextArea value={r.learned} onCommit={(v) => setR({ learned: v })} placeholder="Tres líneas: qué funcionó, qué no y qué probar la próxima vez." ariaLabel="Qué aprendimos" rows={3} />
-        {extra}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+          <AiButton task="aprendizaje" label="¿Qué aprendimos?" busyLabel="Leyendo los resultados…" onClick={() => void actions.runLearning(p.id)} title="Tres líneas a partir de los resultados y una idea para la próxima pieza (se puede deshacer)" />
+          <button
+            className="press invert-hover"
+            onClick={() => actions.ideaFromLearning(p.id)}
+            title="Crea una idea nueva en el tablero con lo aprendido (se puede deshacer)"
+            style={{ ...BTN_SECONDARY, fontSize: 12, padding: "8px 12px" }}
+          >
+            Crear idea a partir de esto
+          </button>
+        </div>
+        <Hint>El aprendizaje vuelve a Ideas: así se cierra el ciclo.</Hint>
       </div>
     </div>
   );

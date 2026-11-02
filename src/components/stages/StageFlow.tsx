@@ -1,5 +1,5 @@
 // Cabecera de etapa, acordeón de etapas y barra "Pasar a →" de la ficha.
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, ChevronDown } from "lucide-react";
 import { useStore } from "../../store";
 import { STAGES, STAGE_HELP, STAGE_LABEL, STAGE_REQUIREMENT, missingFor, nextStage, prevStage, stageIndex, stageSummary } from "../../lib/stages";
@@ -35,18 +35,18 @@ export function StageHeader({ p, compact = false }: { p: Proposal; compact?: boo
  * Una sección por etapa: la actual abierta, las demás plegadas con resumen.
  * Cualquiera se puede abrir para mirar o editar (nada se bloquea para ver).
  */
-export function StageSections({ p, slots }: { p: Proposal; slots?: Partial<Record<Stage, ReactNode>> & { onTeleprompter?: () => void } }) {
+export function StageSections({ p, slots }: { p: Proposal; slots?: { onTeleprompter?: () => void } }) {
   const [open, setOpen] = useState<Stage>(p.stage);
   useEffect(() => setOpen(p.stage), [p.stage, p.id]);
 
   const panel = (st: Stage) => {
     switch (st) {
       case "idea": return <IdeaPanel p={p} />;
-      case "guion": return <>{slots?.guion}<GuionPanel p={p} /></>;
+      case "guion": return <GuionPanel p={p} />;
       case "grabar": return <GrabarPanel p={p} onTeleprompter={slots?.onTeleprompter} />;
-      case "editar": return <EditarPanel p={p} extra={slots?.editar} />;
+      case "editar": return <EditarPanel p={p} />;
       case "listo": return <ListoPanel p={p} />;
-      case "publicado": return <PublicadoPanel p={p} extra={slots?.publicado} />;
+      case "publicado": return <PublicadoPanel p={p} />;
     }
   };
 
