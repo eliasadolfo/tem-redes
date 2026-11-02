@@ -6,11 +6,83 @@ asistido por un agente de IA: el asistente redacta y diseña propuestas; el
 fundador revisa, edita, aprueba y publica.
 
 Cubre Instagram (Reels) · TikTok · YouTube (Shorts + videos largos) · LinkedIn ·
-Newsletter, con el **calendario semanal como pantalla de entrada**.
+Newsletter. Desde la **v2** la app acompaña toda la producción: cada pieza
+recorre una **línea de producción** (Idea → Guion → Grabar → Editar → Listo →
+Publicado) y el **tablero es la pantalla de entrada**. La especificación del
+rediseño está en `docs/REDISENO.md`; lo que costó, en `docs/TRAMPAS.md`.
 
 > Recreación en código del *design handoff* de Claude Design (alta fidelidad).
-> Los datos son **mock determinístico**; en producción se reemplazan por las APIs
-> reales de cada red.
+> Sin `.env` la app corre en **modo demostración**: datos mock y encargos de IA
+> con ejemplos, para probar el flujo completo sin gastar API.
+
+## Línea de producción (v2)
+
+| Etapa | Qué pasa | Para avanzar hace falta |
+|---|---|---|
+| **Idea** | Título, por qué importa, de dónde salió | título + por qué importa |
+| **Guion** | Gancho, desarrollo, cierre; formato, duración, lista de tomas | gancho, desarrollo y ≥1 toma |
+| **Grabar** | Checklist, teleprompter, tomas hechas, link del bruto | todas las tomas marcadas o link del bruto |
+| **Editar** | Instrucciones de corte, caption + hashtags, links del final y la miniatura | link del video final + caption |
+| **Listo** | Día, hora y redes elegidas (sale al calendario) | ≥1 red activa |
+| **Publicado** | Resultados y aprendizaje → vuelve a Ideas | — |
+
+Reglas: **hacia atrás siempre** se puede; hacia adelante solo si cumple el requisito y el
+botón dice qué falta. **Toda acción de estado tiene Deshacer** (6 s). `status` se mantiene
+por compatibilidad (`scheduled` ⇔ Listo/Publicado, `rejected` = descartada). La lógica vive
+en `src/lib/stages.ts` (`missingFor`, `nextStage`, `stageSummary`, plantillas).
+
+### Pantallas
+
+- **Tablero** (entrada): 6 columnas por etapa con conteo; arrastrar o "Pasar a →"; vacíos que
+  explican cada etapa; skeletons mientras carga.
+- **Ficha de la pieza** (`desktop/Copilot.tsx`, `mobile/EditSheet.tsx`): copiloto a la
+  izquierda con chips por etapa; al centro "Etapa N de 6" + barra de progreso y un acordeón
+  con la etapa actual abierta y las demás resumidas; a la derecha la vista previa, estilos y
+  descarga. Una sola primaria: **Pasar a →** (o **Programar publicación** al entrar en Listo).
+- **Ideas**: entrada rápida (una línea + de dónde salió; la palabra clave entre `*asteriscos*`
+  va en naranja) y **Generar ideas** con el tema de la semana.
+- **Grabar** (sesión de grabación): piezas en Grabar en lote; cada una abre el
+  **teleprompter** (texto grande, desplazamiento automático con velocidad, pantalla completa,
+  espacio pausa, Esc cierra); **Grabada ✓** pide el link del bruto y pasa a Editar.
+- **Calendario / Semana**: solo lo que está en Listo o Publicado.
+- **Móvil**: Inicio = resumen del tablero + idea rápida + "Qué toca hoy" (sale hoy, por grabar,
+  por editar); tab Grabar = sesión de grabación; el sheet sigue la misma lógica por etapa.
+- Biblioteca, Métricas, Newsletter, Perfil: sin cambios funcionales.
+
+### Campos de `tem_proposals` (v2)
+
+`stage`, `source`, `script` jsonb `{hook, body, cta, duration_s, format}`, `shots` jsonb
+`[{id,text,done}]`, `checklist` jsonb `[{id,text,done}]`, `raw_url`, `final_url`,
+`thumbnail_url`, `notes` (por qué importa / instrucciones de edición), `recorded_at`,
+`published_at`, `results` jsonb `{views, likes, saves, comments, learned}`. Mapeo en
+`src/lib/db.ts` (`rowToProposal`, `proposalToRow`, `updateProposalFields`; `null` vacía un
+campo, `undefined` no lo toca). Filas sin `stage` caen a Idea, o a Listo si `status` era
+`scheduled`.
+
+### Encargos de IA (`src/lib/ai.ts`)
+
+Helper `ask(prompt, {system, json, max_tokens})` contra **`VITE_N8N_IA_URL`** (body
+`text/plain` JSON `{token, system, prompt, max_tokens, json}` → `{ok, text, json}`). La voz
+TEM va en el system del webhook; cada encargo solo añade su pedido y valida la respuesta.
+
+| Encargo | Dónde | Devuelve |
+|---|---|---|
+| `aiIdeas` | Ideas → Generar ideas; Inicio móvil | `{ideas:[{line:{pre,key,post}, why, source}]}` |
+| `aiScript` | Guion → Escribir guion con IA | `{hook, body, cta, duration_s, format, shots:[string]}` |
+| `aiShots` | Guion → Sugerir tomas | `{shots:[string]}` |
+| `aiCuts` | Editar → Proponer cortes | `{cuts:[{t:"mm:ss", note}], subtitles_style}` (se añade a las instrucciones) |
+| `aiCaption` | Editar → Escribir caption | `{caption, tags}` |
+| `aiLearning` | Publicado → ¿Qué aprendimos? | `{learned, idea:{line, why}}` (la idea se usa en "Crear idea a partir de esto") |
+
+Todos corren por `runAi` en el store: estado visible (`aiBusy`), mensaje en el copiloto,
+**Deshacer** y error que dice cómo seguir. Los webhooks anteriores (`generar-propuestas`,
+`ajustar-pieza`) siguen funcionando: el copiloto ajusta titular/etiqueta/caption/hashtags, y
+si no existe `VITE_N8N_IA_URL` "Generar ideas" usa el generador de propuestas.
+
+### Video pesado
+
+Cortes, subtítulos y versiones **no** se hacen en la app: se guarda el bruto (link de Drive),
+las instrucciones y el resultado (link). No hay uploads de video a Supabase.
 
 ## Stack
 
@@ -35,16 +107,18 @@ Variables (`.env`, gitignored):
 | `VITE_SUPABASE_URL` | URL del proyecto Supabase |
 | `VITE_SUPABASE_ANON_KEY` | llave *publishable* (`sb_publishable_…`) |
 | `VITE_N8N_GENERAR_URL` | webhook n8n que genera propuestas |
+| `VITE_N8N_AJUSTAR_URL` | webhook n8n del copiloto (ajusta una pieza) |
+| `VITE_N8N_IA_URL` | webhook n8n genérico para los encargos por etapa (`ask`) |
 
-> Si cambias `.env`, reinicia Vite. Sin variables la app corre con los datos mock.
+> Si cambias `.env`, reinicia Vite. Sin variables la app corre en modo demostración (mock).
 
 ## Flujo de datos
 
 - Al abrir, el store carga propuestas y conexiones desde Supabase (`src/lib/db.ts`).
-- Aprobar / descartar / publicar / conectar red → se persiste en Supabase.
-- **Generar propuestas** (bandeja y móvil, con campo "tema de la semana") → `src/lib/ai.ts` llama al webhook n8n → Claude redacta N piezas en la voz TEM (JSON) → se insertan en `tem_proposals` y aparecen en la bandeja.
-- **Copiloto** (chat del lado izquierdo al abrir una pieza): cada mensaje o chip va al webhook `TEM Redes — Ajustar pieza con Claude (webhook)` (id `hMl6qfVAN5QaSwRC`) → Claude devuelve la pieza ajustada + una respuesta corta → se actualiza el card en vivo y se persiste.
-- **Caption editable**: lo que escribes en el textarea se guarda solo (debounce 600 ms).
+- Mover de etapa / descartar / programar / conectar red → se persiste en Supabase.
+- **Generar ideas** (Ideas y móvil, con campo "tema de la semana") → `aiIdeas` (o el webhook de propuestas, que ahora deja las piezas en Idea) → se insertan en `tem_proposals`.
+- **Copiloto** (chat del lado izquierdo de la ficha): cada mensaje o chip va al webhook `TEM Redes — Ajustar pieza con Claude (webhook)` (id `hMl6qfVAN5QaSwRC`) → Claude devuelve la pieza ajustada + una respuesta corta → se actualiza el card en vivo y se persiste.
+- **Campos que se guardan solos**: todo texto de la ficha (título, notas, guion, caption, links…) se guarda con debounce 600 ms (`components/stages/ui.tsx`).
 - **Descargar imagen** (copiloto y sheet móvil): `src/lib/exportCard.ts` rasteriza la pieza con `html-to-image` a PNG **1080×1920** (Reels/TikTok/Shorts) o **1920×1080** como miniatura si es video de YouTube. Solo incrusta Montserrat (base64 desde los TTF locales) — si se deja que escanee todas las fuentes del documento se cuelga.
 
 > Nota técnica: la app envía los webhooks como `text/plain` para evitar el preflight CORS; n8n entrega entonces el body como **string**, así que los nodos Code hacen `JSON.parse` si hace falta. Si agregas un webhook nuevo, repite ese patrón.
@@ -88,27 +162,36 @@ npm run deploy   # build de producción + push a la rama gh-pages
 - `vite.config.ts` usa `base: '/tem-redes/'` solo en producción.
 - Las variables `VITE_*` se inyectan en el build desde tu `.env` local (la llave de Supabase es *publishable*; la seguridad real está en RLS + Auth).
 
-El layout es **responsive**: escritorio (sidebar + 7 vistas) por defecto y
-**app móvil** (tab bar + sheet) bajo 720px de ancho.
+El layout es **responsive**: escritorio (sidebar + 8 vistas) por defecto y
+**app móvil** (tab bar de 5 + sheet) bajo 720px de ancho.
 
 ## Estructura
 
 ```
 src/
   styles/        tokens.css (design system) + global.css (reset, animaciones)
-  types.ts       tipos del dominio
-  data/mock.ts   propuestas, biblioteca, temas, variantes (copy real)
+  types.ts       tipos del dominio (Proposal, Stage, Script, CheckItem, Results)
+  data/mock.ts   piezas de ejemplo en cada etapa, biblioteca, temas, variantes
   lib/
+    stages.ts    orden de etapas, nombres, requisitos (missingFor), resúmenes, plantillas
+    ai.ts        webhooks + ask() + encargos por etapa (con ejemplos en modo demo)
+    db.ts        Supabase: mapeo fila ⇄ Proposal, updateProposalFields
     dates.ts     fechas normalizadas a mediodía (evita saltos DST)
     metrics.ts   serie determinística de alcance + agregación en cliente
-    platforms.ts nombres de plataforma
-    useIsMobile.ts
-  store.tsx      estado global + acciones (Context)
-  components/    Card916, CalendarPopover, Toast (compartidos)
-  desktop/       Sidebar, DesktopApp, Calendar, Copilot, Inbox, Library,
-                 Metrics, Newsletter, Profile
+    platforms.ts nombres de plataforma (PLATFORM_LABEL: nunca "IG" ni "in" a la vista)
+    exportCard.ts PNG 9:16 / miniatura 16:9
+  store.tsx      estado global + acciones (setStage, updateFields, finishRecording, run*)
+  components/
+    PieceCard      la tarjeta única de pieza (tablero, calendario, ideas, móvil)
+    Teleprompter   texto grande, auto-scroll, pantalla completa
+    RecordSession  sesión de grabación (escritorio y móvil)
+    stages/        ui.tsx (campos que se guardan solos, casillas), panels.tsx (6 paneles),
+                   StageFlow.tsx (cabecera, acordeón, barra "Pasar a →")
+    Card916, CalendarPopover, Toast
+  desktop/       Sidebar, DesktopApp, Tablero, Ideas, Calendar, Copilot (ficha),
+                 Library, Metrics, Newsletter, Profile
   mobile/        MobileApp, MobileHome, MobileWeek, MobileMetrics,
-                 MobileProfile, EditSheet
+                 MobileProfile, EditSheet (ficha)
 ```
 
 ## Design tokens (resumen)
@@ -128,10 +211,9 @@ texto de cuerpo; sobre claro `#111`, sobre oscuro `#FFF`.
 
 ## Pendiente (próximas fases)
 
-- Supabase Auth (login de Elías) + cerrar RLS. **Requisito antes de deploy público.**
-- Deploy a link público (Vercel).
-- OAuth por red (Instagram Graph, TikTok Display, YouTube Data, LinkedIn Marketing) + métricas reales.
-- Editor manual de piezas + programación/publicación real.
+- Motor de edición (ffmpeg, estilo TEM) en el VPS, disparado desde la app con el bruto y las instrucciones.
+- OAuth por red (Instagram Graph, TikTok Display, YouTube Data, LinkedIn Marketing) + métricas reales en Publicado.
+- Programación/publicación real (hoy "Listo" solo programa; publicas tú).
 - Persistir el historial del chat del copiloto y el envío de newsletter.
 - Exportar video (hoy solo imagen PNG).
 
