@@ -1,0 +1,114 @@
+/* =============================================================================
+   TEM · Sistema v2 · componentes de interfaz (apps internas y públicas)
+   Requiere tokens.css. Clases con prefijo tem-. Reglas: SISTEMA.md › Interfaces.
+   Pon class="tem-app" en <body> (activa el modo oscuro en apps internas).
+   ============================================================================= */
+
+.tem-app {
+  margin: 0; background: var(--tem-gray-50); color: var(--tem-ink);
+  font-family: var(--tem-font); font-size: var(--tem-ui-body); line-height: var(--tem-ui-lh);
+  letter-spacing: var(--tem-tr-texto);
+  -webkit-font-smoothing: antialiased; font-feature-settings: "kern", "calt";
+}
+.tem-app *, .tem-app *::before, .tem-app *::after { box-sizing: border-box; }
+.tem-app ::selection { background: var(--tem-orange-suave); color: var(--tem-ink); }
+.tem-app :focus-visible { outline: none; box-shadow: var(--tem-foco); }
+:where(.tem-app) :where(button, input, select, textarea) { font: inherit; color: inherit; letter-spacing: inherit; }
+:where(.tem-app) :where(h1, h2, h3, p) { margin: 0; }
+
+/* --- Tipografía de pantalla ---------------------------------------------------- */
+.tem-h1    { font-size: var(--tem-ui-h1); font-weight: 500; line-height: var(--tem-ui-lh-tight); letter-spacing: var(--tem-tr-ui-titulo); }
+.tem-title { font-size: var(--tem-ui-title); font-weight: 500; line-height: 1.3; letter-spacing: var(--tem-tr-ui-titulo); }
+.tem-small { font-size: var(--tem-ui-small); }
+.tem-caption { font-size: var(--tem-ui-caption); line-height: 1.35; color: var(--tem-ink-2); }
+.tem-muted { color: var(--tem-ink-2); }
+
+/* --- Barra superior ------------------------------------------------------------ */
+.tem-bar { height: 56px; display: flex; align-items: center; gap: var(--tem-s-5); padding: 0 var(--tem-s-5);
+  background: var(--tem-white); border-bottom: var(--tem-lw-hair) solid var(--tem-line); }
+.tem-bar__producto { font-family: var(--tem-font-firma); font-weight: 600; font-size: var(--tem-ui-body); letter-spacing: var(--tem-tr-firma); color: var(--tem-ink); white-space: nowrap; }
+.tem-bar__producto .tem-dot { padding: 0 .22em; }
+.tem-nav { display: flex; gap: var(--tem-s-1); }
+.tem-nav a { height: 32px; display: inline-flex; align-items: center; padding: 0 var(--tem-s-3); border-radius: var(--tem-r-pill);
+  font-size: var(--tem-ui-small); font-weight: 500; color: var(--tem-ink-2); text-decoration: none;
+  transition: background var(--tem-dur-ui) var(--tem-ease-ui), color var(--tem-dur-ui) var(--tem-ease-ui); }
+.tem-nav a:hover { color: var(--tem-ink); }
+.tem-nav a[aria-current="page"] { background: var(--tem-canvas); color: var(--tem-ink); }
+
+/* --- Botones: píldora. Primario negro (por defecto) o naranja (una vez por pantalla) -- */
+.tem-btn { height: var(--tem-h-control); padding: 0 var(--tem-s-5); border-radius: var(--tem-r-pill); border: 1px solid transparent;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--tem-s-2);
+  font-size: var(--tem-ui-small); font-weight: 500; white-space: nowrap; cursor: pointer; text-decoration: none;
+  transition: background var(--tem-dur-ui) var(--tem-ease-ui), border-color var(--tem-dur-ui) var(--tem-ease-ui), transform 120ms var(--tem-ease-ui); }
+.tem-btn:active { transform: scale(.98); }
+.tem-btn:disabled, .tem-btn[aria-disabled="true"] { opacity: .4; pointer-events: none; }
+.tem-btn--lg { height: var(--tem-h-control-lg); font-size: var(--tem-ui-body); padding: 0 var(--tem-s-6); }
+.tem-btn--primario  { background: var(--tem-ink); color: var(--tem-white); }
+.tem-btn--primario:hover { background: color-mix(in srgb, var(--tem-ink) 84%, var(--tem-white)); }
+.tem-btn--naranja   { background: var(--tem-orange); color: var(--tem-on-orange); }
+.tem-btn--naranja:hover { background: var(--tem-orange-hover); }
+.tem-btn--secundario { background: var(--tem-white); color: var(--tem-ink); border-color: var(--tem-line-strong); }
+.tem-btn--secundario:hover { border-color: var(--tem-ink-2); }
+.tem-btn--texto { background: transparent; color: var(--tem-ink-2); padding: 0 var(--tem-s-3); }
+.tem-btn--texto:hover { color: var(--tem-ink); }
+.tem-btn--peligro { background: var(--tem-white); color: var(--tem-error); border-color: var(--tem-line-strong); }
+
+/* --- Campos ---------------------------------------------------------------------- */
+.tem-field { display: flex; flex-direction: column; gap: 6px; }
+.tem-label { font-size: var(--tem-ui-small); font-weight: 500; color: var(--tem-ink); }
+.tem-input, .tem-select, .tem-textarea { width: 100%; min-height: var(--tem-h-control); padding: 0 var(--tem-s-3);
+  font-size: var(--tem-ui-body); background: var(--tem-white); color: var(--tem-ink);
+  border: 1px solid var(--tem-line-strong); border-radius: var(--tem-r-sm);
+  transition: border-color var(--tem-dur-ui) var(--tem-ease-ui), box-shadow var(--tem-dur-ui) var(--tem-ease-ui); }
+.tem-textarea { padding: var(--tem-s-3); min-height: 96px; resize: vertical; line-height: var(--tem-ui-lh); }
+.tem-input::placeholder, .tem-textarea::placeholder { color: var(--tem-ink-2); opacity: 1; }
+.tem-input:hover, .tem-select:hover, .tem-textarea:hover { border-color: var(--tem-ink-2); }
+.tem-input:focus, .tem-select:focus, .tem-textarea:focus { outline: none; border-color: var(--tem-ink); box-shadow: var(--tem-foco); }
+.tem-select { appearance: none; padding-right: 36px; background-repeat: no-repeat; background-position: right 12px center; background-size: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%236B6B70' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E"); }
+.tem-help { font-size: var(--tem-ui-caption); color: var(--tem-ink-2); }
+.tem-field--error .tem-input, .tem-field--error .tem-select, .tem-field--error .tem-textarea { border-color: var(--tem-error); }
+.tem-field--error .tem-help { color: var(--tem-error); }
+
+/* --- Tarjetas: blancas sobre gris, sin borde ni sombra. Nunca una dentro de otra. -- */
+.tem-card { background: var(--tem-white); border-radius: var(--tem-r-md); padding: var(--tem-s-5); }
+.tem-card--sobre-blanco { border: 1px solid var(--tem-line); }
+.tem-metric__label { font-size: var(--tem-ui-small); color: var(--tem-ink-2); }
+.tem-metric__valor { font-size: var(--tem-ui-cifra); font-weight: 500; line-height: 1.1; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; margin-top: var(--tem-s-2); }
+.tem-metric__valor--clave { font-weight: 600; }
+.tem-metric__nota { font-size: var(--tem-ui-caption); color: var(--tem-ink-2); margin-top: var(--tem-s-2); }
+
+/* --- Tabla ------------------------------------------------------------------------- */
+.tem-table { width: 100%; border-collapse: collapse; font-size: var(--tem-ui-small); }
+.tem-table th { text-align: left; font-size: var(--tem-ui-caption); font-weight: 500; color: var(--tem-ink-2);
+  padding: 0 var(--tem-s-3) var(--tem-s-2); border-bottom: 1px solid var(--tem-line); white-space: nowrap; }
+.tem-table td { height: var(--tem-h-fila); padding: 0 var(--tem-s-3); border-bottom: 1px solid var(--tem-line); }
+.tem-table tr:last-child td { border-bottom: 0; }
+.tem-table tbody tr:hover td { background: var(--tem-gray-50); }
+.tem-table tr[aria-selected="true"] td { background: var(--tem-orange-suave); }
+.tem-table .num, .tem-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.tem-table th:first-child, .tem-table td:first-child { padding-left: 0; }
+.tem-table th:last-child, .tem-table td:last-child { padding-right: 0; }
+.tem-table--densa td { height: 36px; }
+
+/* --- Estados: texto + fondo pálido, sin iconos ni barra lateral --------------------- */
+.tem-tag { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: var(--tem-r-xs);
+  font-size: var(--tem-ui-caption); font-weight: 500; white-space: nowrap; background: var(--tem-gray-50); color: var(--tem-ink-2); }
+.tem-tag--ok    { background: var(--tem-ok-bg);    color: var(--tem-ok); }
+.tem-tag--warn  { background: var(--tem-warn-bg);  color: var(--tem-warn); }
+.tem-tag--error { background: var(--tem-error-bg); color: var(--tem-error); }
+.tem-aviso { padding: var(--tem-s-3) var(--tem-s-4); border-radius: var(--tem-r-sm); font-size: var(--tem-ui-small); background: var(--tem-gray-50); color: var(--tem-ink); }
+.tem-aviso--ok    { background: var(--tem-ok-bg);    color: var(--tem-ok); }
+.tem-aviso--warn  { background: var(--tem-warn-bg);  color: var(--tem-warn); }
+.tem-aviso--error { background: var(--tem-error-bg); color: var(--tem-error); }
+
+/* --- Gráfica de barras (HTML/SVG): grises + naranja para el dato que importa ------- */
+.tem-chart { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; align-items: end; gap: var(--tem-s-2); }
+.tem-chart__col { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+.tem-chart__bar { background: var(--tem-chart-gray); border-radius: 4px 4px 0 0; }
+.tem-chart__bar--dato { background: var(--tem-orange); }
+.tem-chart__valor { font-size: var(--tem-ui-caption); color: var(--tem-ink-2); text-align: center; font-variant-numeric: tabular-nums; }
+.tem-chart__valor--dato { color: var(--tem-ink); font-weight: 500; }
+.tem-chart__eje { font-size: var(--tem-ui-caption); color: var(--tem-ink-2); text-align: center; padding-top: 6px; border-top: 1px solid var(--tem-line); }
+
+@media (prefers-reduced-motion: reduce) { .tem-app * { transition: none !important; } }

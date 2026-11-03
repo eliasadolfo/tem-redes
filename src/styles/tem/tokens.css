@@ -1,0 +1,180 @@
+/* =============================================================================
+   TEM · Sistema visual v2 · tokens canónicos
+   Aprobado por Elías el 3-nov-2026. Reglas de uso: SISTEMA.md (misma carpeta).
+   Un solo archivo para redes, interfaces y documentos. Si un proyecto necesita
+   un valor que no está aquí, se agrega aquí primero; no se inventa en el proyecto.
+
+   Uso: copia tokens.css + fonts/ al proyecto (las rutas de las fuentes son
+   relativas a este archivo) y usa solo var(--tem-*).
+   Fuentes: Inter y Montserrat, ambas SIL OFL 1.1 (licencias en fonts/). Sin SF Pro.
+   ============================================================================= */
+
+/* --- Fuentes ---------------------------------------------------------------- */
+/* Inter: todo el texto que se lee. 400 texto, 500 títulos, 600 solo cifras clave.
+   400 cursiva solo para citas en documentos. */
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/inter-latin-400-normal.woff2") format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/inter-latin-ext-400-normal.woff2") format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "Inter"; font-style: italic; font-weight: 400; font-display: swap; src: url("fonts/inter-latin-400-italic.woff2") format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Inter"; font-style: italic; font-weight: 400; font-display: swap; src: url("fonts/inter-latin-ext-400-italic.woff2") format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/inter-latin-500-normal.woff2") format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/inter-latin-ext-500-normal.woff2") format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 600; font-display: swap; src: url("fonts/inter-latin-600-normal.woff2") format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 600; font-display: swap; src: url("fonts/inter-latin-ext-600-normal.woff2") format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+
+/* Montserrat: SOLO la firma "Elías Adolfo · TEM", el handle y el nombre del
+   producto en la barra de una app (el lugar del logo). Familia con nombre propio
+   para que nunca se mezcle con la Montserrat 800–900 instalada en el sistema. */
+@font-face { font-family: "TEM Firma"; font-weight: 500; font-display: swap; src: url("fonts/montserrat-latin-500-normal.woff2") format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "TEM Firma"; font-weight: 500; font-display: swap; src: url("fonts/montserrat-latin-ext-500-normal.woff2") format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "TEM Firma"; font-weight: 600; font-display: swap; src: url("fonts/montserrat-latin-600-normal.woff2") format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "TEM Firma"; font-weight: 600; font-display: swap; src: url("fonts/montserrat-latin-ext-600-normal.woff2") format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+
+:root {
+  /* --- Color: marca ---------------------------------------------------------- */
+  --tem-orange:        #F47C3C; /* único acento. Rellenos, el dato que importa en
+                                   gráficas, el punto de la firma, el anillo de foco.
+                                   Como texto solo en redes o sobre fondo oscuro. */
+  --tem-orange-hover:  #E8702F; /* botón naranja al pasar el cursor */
+  --tem-on-orange:     #111111; /* texto sobre naranja (7:1). Blanco no se lee (2,7:1) */
+  --tem-orange-texto:  #B85014; /* el mismo naranja oscurecido para TEXTO sobre
+                                   blanco en interfaces y documentos (5,0:1). */
+  --tem-orange-suave:  #FDF0E8; /* fondo de la fila o celda seleccionada. Nada más. */
+  --tem-ink:           #111111; /* texto principal; botón primario negro */
+  --tem-ink-2:         #6B6B70; /* texto secundario, firma, pies, placeholder (5,3:1) */
+  --tem-ink-3:         #9A9A9A; /* solo el handle y texto deshabilitado. Nunca párrafo */
+  --tem-white:         #FFFFFF; /* tarjeta, superficie de app, página de documento */
+
+  /* --- Color: grises de interfaz y bordes ----------------------------------- */
+  --tem-gray-50:       #F7F7F7; /* fondo de app detrás de tarjetas; hover de fila */
+  --tem-canvas:        #EFEFEF; /* canvas de redes (con tarjeta blanca encima);
+                                   en apps: pastilla de navegación activa */
+  --tem-line:          #E5E5E5; /* divisores, filas de tabla, borde de tarjeta sobre blanco */
+  --tem-line-strong:   #C8C8CD; /* borde de campos y botón secundario */
+  --tem-chart-gray:    #D1D1D6; /* barras y series que no son el dato que importa */
+
+  /* --- Color: estados (texto oscuro + fondo pálido, sin saturar, sin iconos) -- */
+  --tem-ok:            #2F7D4F; --tem-ok-bg:    #EEF6F1;
+  --tem-warn:          #8A5A00; --tem-warn-bg:  #FBF3E4;
+  --tem-error:         #B3261E; --tem-error-bg: #FBEDEB;
+  /* "info" no tiene color propio: texto --tem-ink-2 sobre --tem-gray-50. */
+
+  /* --- Color: solo escenas de Reel (manual v1, siguen vigentes) -------------- */
+  --tem-navy:          #1D3557; /* canvas de la escena Solución */
+  --tem-red:           #FF3B30; /* cifra de pérdida, solo sobre tarjeta negra o navy */
+
+  /* --- Familias -------------------------------------------------------------- */
+  --tem-font:       "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --tem-font-firma: "TEM Firma", "Inter", sans-serif;
+
+  /* --- Pesos (no existen otros) ---------------------------------------------- */
+  --tem-w-texto:  400;
+  --tem-w-titulo: 500;
+  --tem-w-cifra:  600; /* solo la cifra clave de una pantalla o página */
+  --tem-w-firma:  600; /* Montserrat de la firma; el handle va en 500 */
+
+  /* --- Escala de PANTALLA (apps). Fija en px, razón ~1,2. ------------------- */
+  --tem-ui-caption: 12px;  /* encabezado de columna, metadato, ayuda corta */
+  --tem-ui-small:   14px;  /* texto de tabla, botones y navegación en paneles internos */
+  --tem-ui-body:    16px;  /* texto normal; campos (16 evita el zoom de iOS) */
+  --tem-ui-title:   20px;  /* título de tarjeta o sección */
+  --tem-ui-h1:      28px;  /* título de la pantalla, uno por pantalla */
+  --tem-ui-cifra:   36px;  /* número de una tarjeta de métrica */
+  --tem-ui-lh-tight: 1.2;  --tem-ui-lh: 1.5;
+
+  /* --- Escala de DOCUMENTO A4 (pt). Imprimible y PDF. ------------------------ */
+  --tem-doc-nota:    8.5pt;  /* nota, pie de tabla, encabezado y pie de página */
+  --tem-doc-tabla:   9.5pt;  /* texto de tabla */
+  --tem-doc-body:   10.5pt;  /* texto */
+  --tem-doc-legal:    11pt;  /* texto de documentos legales */
+  --tem-doc-h3:     10.5pt;  /* mismo tamaño que el texto: lo separa el peso 500 y el aire */
+  --tem-doc-h2:       14pt;
+  --tem-doc-h1:       22pt;
+  --tem-doc-portada:  32pt;  /* título de portada */
+  --tem-doc-cifra:    40pt;  /* cifra destacada, máximo 3 por página */
+  --tem-doc-lh: 1.55;  --tem-doc-lh-legal: 1.6;  --tem-doc-lh-titulo: 1.15;
+  --tem-doc-medida: 140mm;   /* ancho máximo del párrafo (~72 caracteres) */
+
+  /* --- Escala de REDES (px sobre el lienzo real). Máximo 3 tamaños por pieza. -- */
+  --tem-rs-banner-titulo:      100px;  /* 2560×1440, solo tipografía sobre blanco */
+  --tem-rs-banner-firma:        32px;
+  --tem-rs-mini-cifra:         300px;  /* miniatura 1280×720 */
+  --tem-rs-mini-palabra:        60px;
+  --tem-rs-carrusel-titulo:     72px;  /* 1080×1350 */
+  --tem-rs-carrusel-texto:      38px;
+  --tem-rs-carrusel-firma:      26px;
+  --tem-rs-reel-titulo:         64px;  /* tarjeta de Reel 1080×1920 */
+  --tem-rs-reel-handle:         30px;
+
+  /* --- Tracking ---------------------------------------------------------------- */
+  --tem-tr-cifra:  -0.055em; /* cifras gigantes de redes */
+  --tem-tr-titulo: -0.03em;  /* títulos de redes y portada */
+  --tem-tr-ui-titulo: -0.015em; /* títulos de pantalla y documento */
+  --tem-tr-texto:  -0.011em;
+  --tem-tr-firma:   0.01em;
+
+  /* --- Espaciado (base 4) -------------------------------------------------------- */
+  --tem-s-1: 4px;  --tem-s-2: 8px;  --tem-s-3: 12px; --tem-s-4: 16px;
+  --tem-s-5: 24px; --tem-s-6: 32px; --tem-s-7: 48px; --tem-s-8: 64px; --tem-s-9: 96px;
+  /* Documento A4 */
+  --tem-doc-margen: 24mm; /* los 4 lados; repetido a mano en @page de documento.css */
+
+  /* --- Radios ------------------------------------------------------------------- */
+  --tem-r-xs:    6px;   /* etiqueta de estado */
+  --tem-r-sm:   10px;   /* campos, avisos */
+  --tem-r-md:   14px;   /* tarjetas de app */
+  --tem-r-lg:   20px;   /* paneles grandes, hojas modales */
+  --tem-r-pill: 999px;  /* botones y navegación */
+  --tem-r-rs-1080: 40px; /* tarjeta de redes en 1080 */
+
+  /* --- Sombras (dos capas, cortas, transparentes) --------------------------------- */
+  --tem-sh-0: none;                                                          /* tarjetas de app y todo documento */
+  --tem-sh-1: 0 1px 2px rgba(17,17,17,.04), 0 4px 16px rgba(17,17,17,.04);   /* tarjeta que se levanta al pasar */
+  --tem-sh-2: 0 2px 6px rgba(17,17,17,.06), 0 16px 40px rgba(17,17,17,.10);  /* menús, popovers, hojas modales */
+  --tem-sh-rs-1080: 0 1px 2px rgba(17,17,17,.04), 0 12px 36px rgba(17,17,17,.06);
+
+  /* --- Líneas -------------------------------------------------------------------- */
+  --tem-lw-hair: 1px;     /* bordes y divisores en pantalla */
+  --tem-lw-foco: 3px;     /* anillo de foco */
+  --tem-lw-serie: 2px;    /* línea de gráfica */
+  --tem-lw-doc: 0.5pt;    /* filas de tabla en documento */
+  --tem-lw-doc-fuerte: 0.75pt; /* bajo el encabezado de tabla y sobre el total */
+  --tem-foco: 0 0 0 var(--tem-lw-foco) rgba(244,124,60,.40);
+
+  /* --- Movimiento -------------------------------------------------------------- */
+  --tem-ease-ui:     cubic-bezier(.22, 1, .36, 1);   /* apps: 150–200 ms, sin rebote */
+  --tem-dur-ui:      180ms;
+  --tem-ease-spring: cubic-bezier(.34, 1.56, .64, 1); /* solo motion de redes (tarjetas de Reel) */
+
+  /* --- Tamaños táctiles ------------------------------------------------------------ */
+  --tem-h-control:    44px; /* botón y campo */
+  --tem-h-control-lg: 48px; /* formularios públicos en el teléfono */
+  --tem-h-fila:       44px; /* fila de tabla (36 en tablas densas) */
+}
+
+/* --- Modo oscuro: solo apps internas (TEM Studio / Redes, panel del Diagnóstico).
+   Documentos y piezas de redes nunca cambian de tema. ------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tem-app,
+  :root:not([data-theme="light"]).tem-app {
+    --tem-white: #1C1C1E; --tem-gray-50: #111112; --tem-canvas: #2C2C2E;
+    --tem-ink: #F2F2F2; --tem-ink-2: #A1A1A6; --tem-ink-3: #6E6E73;
+    --tem-line: #2C2C2E; --tem-line-strong: #48484A; --tem-chart-gray: #48484A;
+    --tem-orange-texto: #F47C3C; --tem-orange-suave: #3A2418;
+    --tem-ok: #6FCF97; --tem-ok-bg: #16281D; --tem-warn: #E7B45A; --tem-warn-bg: #2B2212;
+    --tem-error: #FF8A80; --tem-error-bg: #2E1614;
+  }
+}
+:root[data-theme="dark"] .tem-app, :root[data-theme="dark"].tem-app {
+  --tem-white: #1C1C1E; --tem-gray-50: #111112; --tem-canvas: #2C2C2E;
+  --tem-ink: #F2F2F2; --tem-ink-2: #A1A1A6; --tem-ink-3: #6E6E73;
+  --tem-line: #2C2C2E; --tem-line-strong: #48484A; --tem-chart-gray: #48484A;
+  --tem-orange-texto: #F47C3C; --tem-orange-suave: #3A2418;
+  --tem-ok: #6FCF97; --tem-ok-bg: #16281D; --tem-warn: #E7B45A; --tem-warn-bg: #2B2212;
+  --tem-error: #FF8A80; --tem-error-bg: #2E1614;
+}
+
+/* --- La firma: el único lugar donde vive Montserrat. Punto medio naranja. ------ */
+.tem-firma { font-family: var(--tem-font-firma); font-weight: 600; letter-spacing: var(--tem-tr-firma); color: var(--tem-ink-2); white-space: nowrap; }
+.tem-firma .tem-dot, .tem-dot { color: var(--tem-orange); padding: 0 .28em; }
+.tem-handle { font-family: var(--tem-font-firma); font-weight: 500; letter-spacing: var(--tem-tr-firma); color: var(--tem-ink-3); }
+.tem-num { font-variant-numeric: tabular-nums; }
