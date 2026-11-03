@@ -1,86 +1,59 @@
-// Paneles por etapa de la ficha de la pieza. Mismos componentes en escritorio y móvil.
+// Paneles por etapa de la ficha de la pieza. Los mismos en escritorio y teléfono.
 import { useState } from "react";
-import { Sparkles } from "lucide-react";
 import { useStore, type AiTask } from "../../store";
 import { DAY_NAMES_FULL } from "../../lib/dates";
-import { PLATFORM_LABEL } from "../../lib/platforms";
+import { PLATFORM_LABEL, PUBLISH_TAGS, pieceTitle } from "../../lib/platforms";
 import {
   DURATIONS_S,
   EMPTY_SCRIPT,
-  HOOK_TEMPLATES,
   SCRIPT_FORMATS,
   SHOT_TEMPLATES,
   deliveryStatus,
   newItem,
   parseLine,
 } from "../../lib/stages";
-import { EDIT_MODES, checklistFor, deliveryFor, guideFor, suggestedFileName } from "../../lib/formatos";
+import { EDIT_MODES, checklistFor, deliveryFor, guideFor, pieceFormat, suggestedFileName } from "../../lib/formatos";
 import FormatGuide from "../FormatGuide";
 import { TAG_TO_NETWORK, hasPublishing } from "../../lib/publish";
-import type { CheckItem, Network, PostResult, Proposal, Results, Script } from "../../types";
-import { BTN_GHOST, BTN_SECONDARY, CheckRow, Hint, INPUT, Label, SELECT, TemplateChip, TextArea, TextInput } from "./ui";
+import type { CheckItem, Network, PlatformTag, PostResult, Proposal, Results, Script } from "../../types";
+import { CheckRow, Field, TextArea, TextInput } from "./ui";
 
-/* -------------------------------------------------------------------------- */
-/*  1 · Idea                                                                   */
-/* -------------------------------------------------------------------------- */
+const durLabel = (d: number) => (d < 120 ? `${d} s` : `${Math.round(d / 60)} min`);
+
+/* -------------------------------- 1 · Idea -------------------------------- */
 
 export function IdeaPanel({ p }: { p: Proposal }) {
   const { actions } = useStore();
   const lineText = p.line.key ? `${p.line.pre}*${p.line.key}*${p.line.post}` : p.line.pre + p.line.post;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div>
-        <Label right="se guarda solo">Título</Label>
-        <TextInput
-          value={lineText}
-          onCommit={(v) => actions.updateFields(p.id, { line: parseLine(v) })}
-          placeholder="Una línea · la palabra clave entre *asteriscos*"
-          ariaLabel="Título de la pieza"
-          style={{ fontSize: 15, fontWeight: 500 }}
-        />
-        <Hint>La palabra entre *asteriscos* va en naranja en la pieza.</Hint>
-      </div>
-      <div>
-        <Label>Por qué importa</Label>
-        <TextArea
-          value={p.notes ?? ""}
-          onCommit={(v) => actions.updateFields(p.id, { notes: v })}
-          placeholder="Qué le pasa a quien lo ve, qué cambia si lo sabe…"
-          ariaLabel="Por qué importa"
-          rows={3}
-        />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <div>
-          <Label>De dónde salió</Label>
-          <TextInput value={p.source ?? ""} onCommit={(v) => actions.updateFields(p.id, { source: v })} placeholder="Reunión, comentario, dato…" ariaLabel="Origen" />
-        </div>
-        <div>
-          <Label>Etiqueta</Label>
-          <TextInput value={p.eyebrow} onCommit={(v) => actions.updateFields(p.id, { eyebrow: v.toUpperCase() })} placeholder="EL DATO, EL COSTO…" ariaLabel="Etiqueta de la pieza" />
-        </div>
+    <div className="panel">
+      <Field label="Título" help="La palabra entre *asteriscos* va en naranja en la pieza.">
+        <TextInput value={lineText} onCommit={(v) => actions.updateFields(p.id, { line: parseLine(v) })} ariaLabel="Título de la pieza" />
+      </Field>
+      <Field label="Por qué importa">
+        <TextArea value={p.notes ?? ""} onCommit={(v) => actions.updateFields(p.id, { notes: v })} placeholder="Qué le pasa a quien lo ve, qué cambia si lo sabe" ariaLabel="Por qué importa" />
+      </Field>
+      <div className="dos">
+        <Field label="De dónde salió">
+          <TextInput value={p.source ?? ""} onCommit={(v) => actions.updateFields(p.id, { source: v })} ariaLabel="De dónde salió" />
+        </Field>
+        <Field label="Tema">
+          <TextInput value={p.eyebrow} onCommit={(v) => actions.updateFields(p.id, { eyebrow: v })} ariaLabel="Tema de la pieza" />
+        </Field>
       </div>
     </div>
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  2 · Guion                                                                  */
-/* -------------------------------------------------------------------------- */
+/* -------------------------------- 2 · Guion ------------------------------- */
 
-/** Botón secundario para un encargo de IA, con spinner mientras trabaja (H01). */
-export function AiButton({ task, label, busyLabel, onClick, title }: { task: AiTask; label: string; busyLabel: string; onClick: () => void; title?: string }) {
+/** Botón para un encargo de IA, con estado mientras trabaja (H01). */
+export function AiButton({ task, label, busyLabel, onClick }: { task: AiTask; label: string; busyLabel: string; onClick: () => void }) {
   const { aiBusy } = useStore();
   const busy = aiBusy === task;
   return (
-    <button
-      className="press invert-hover"
-      onClick={onClick}
-      disabled={aiBusy !== null}
-      title={title}
-      style={{ ...BTN_SECONDARY, fontSize: 12, padding: "8px 12px" }}
-    >
-      {busy ? <span className="spinner spinner-sm" aria-hidden="true" /> : <Sparkles size={14} strokeWidth={2.4} />}
+    <button className="tem-btn tem-btn--secundario btn-chico" onClick={onClick} disabled={aiBusy !== null}>
+      {busy && <span className="spinner" aria-hidden="true" />}
       {busy ? busyLabel : label}
     </button>
   );
@@ -88,7 +61,7 @@ export function AiButton({ task, label, busyLabel, onClick, title }: { task: AiT
 
 export function GuionPanel({ p }: { p: Proposal }) {
   const { actions } = useStore();
-  const s: Script = p.script ?? EMPTY_SCRIPT;
+  const s: Script = p.script ?? { ...EMPTY_SCRIPT, format: p.type };
   const setScript = (patch: Partial<Script>) => actions.updateFields(p.id, { script: { ...s, ...patch } });
   const shots = p.shots ?? [];
   const setShots = (next: CheckItem[]) => actions.updateFields(p.id, { shots: next });
@@ -99,365 +72,226 @@ export function GuionPanel({ p }: { p: Proposal }) {
     setShots([...shots, newItem(clean)]);
     setNewShot("");
   };
+  const formats = SCRIPT_FORMATS.includes(s.format) ? SCRIPT_FORMATS : [s.format, ...SCRIPT_FORMATS];
+  const durations = [...new Set([...DURATIONS_S, ...(s.duration_s ? [s.duration_s] : [])])].sort((a, b) => a - b);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <AiButton
-          task="guion"
-          label={s.hook ? "Reescribir guion con IA" : "Escribir guion con IA"}
-          busyLabel="Escribiendo el guion…"
-          onClick={() => void actions.runScript(p.id)}
-          title="Gancho, desarrollo, cierre y tomas a partir de la idea y el formato (se puede deshacer)"
-        />
-        <AiButton task="tomas" label="Sugerir tomas" busyLabel="Pensando tomas…" onClick={() => void actions.runShots(p.id)} title="Reemplaza la lista de tomas (se puede deshacer)" />
+    <div className="panel">
+      <div className="fila">
+        <AiButton task="guion" label={s.hook ? "Reescribir guion" : "Escribir guion"} busyLabel="Escribiendo…" onClick={() => void actions.runScript(p.id)} />
+        <AiButton task="tomas" label="Sugerir tomas" busyLabel="Pensando…" onClick={() => void actions.runShots(p.id)} />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <div>
-          <Label>Formato</Label>
-          <select value={s.format} onChange={(e) => setScript({ format: e.target.value })} aria-label="Formato" style={{ ...SELECT, width: "100%" }}>
-            {SCRIPT_FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
+      <div className="dos">
+        <Field label="Formato">
+          <select className="tem-select" value={s.format} onChange={(e) => setScript({ format: e.target.value })} aria-label="Formato">
+            {formats.map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
-        </div>
-        <div>
-          <Label>Duración</Label>
-          <select
-            value={s.duration_s ?? ""}
-            onChange={(e) => setScript({ duration_s: e.target.value ? Number(e.target.value) : null })}
-            aria-label="Duración"
-            style={{ ...SELECT, width: "100%" }}
-          >
+        </Field>
+        <Field label="Duración">
+          <select className="tem-select" value={s.duration_s ?? ""} onChange={(e) => setScript({ duration_s: e.target.value ? Number(e.target.value) : null })} aria-label="Duración">
             <option value="">Sin definir</option>
-            {DURATIONS_S.map((d) => <option key={d} value={d}>{d < 120 ? `${d} s` : `${Math.round(d / 60)} min`}</option>)}
+            {durations.map((d) => <option key={d} value={d}>{durLabel(d)}</option>)}
           </select>
-        </div>
+        </Field>
       </div>
+      <Field label="Gancho">
+        <TextArea value={s.hook} onCommit={(v) => setScript({ hook: v })} placeholder="Los primeros 3 segundos" ariaLabel="Gancho" rows={Math.max(2, s.hook.split("\n").length * 2)} />
+      </Field>
+      <Field label="Desarrollo">
+        <TextArea value={s.body} onCommit={(v) => setScript({ body: v })} placeholder="El caso, el dato, los pasos. Una idea por línea." ariaLabel="Desarrollo" rows={5} />
+      </Field>
+      <Field label="Cierre">
+        <TextArea value={s.cta} onCommit={(v) => setScript({ cta: v })} placeholder="Qué quieres que hagan después de verlo" ariaLabel="Cierre" rows={2} />
+      </Field>
 
-      <div>
-        <Label right="se guarda solo">Gancho</Label>
-        <TextArea value={s.hook} onCommit={(v) => setScript({ hook: v })} placeholder="Los primeros 3 segundos: lo que hace que no pasen de largo." ariaLabel="Gancho" rows={2} />
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-          {HOOK_TEMPLATES.map((t) => <TemplateChip key={t} text={t} onPick={() => setScript({ hook: t })} />)}
+      <div className="grupo">
+        <div className="grupo__cabeza">Tomas{shots.length > 0 && <span>{shots.length}</span>}</div>
+        {shots.map((sh) => (
+          <CheckRow
+            key={sh.id}
+            checked={sh.done}
+            text={sh.text}
+            onToggle={() => setShots(shots.map((x) => (x.id === sh.id ? { ...x, done: !x.done } : x)))}
+            onRemove={() => setShots(shots.filter((x) => x.id !== sh.id))}
+          />
+        ))}
+        <div className="fila" style={{ flexWrap: "nowrap" }}>
+          <input className="tem-input crece" value={newShot} onChange={(e) => setNewShot(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addShot(newShot)} placeholder="Nueva toma" aria-label="Nueva toma" />
+          <button className="tem-btn tem-btn--secundario" onClick={() => addShot(newShot)} disabled={!newShot.trim()}>Añadir</button>
         </div>
-      </div>
-      <div>
-        <Label>Desarrollo</Label>
-        <TextArea value={s.body} onCommit={(v) => setScript({ body: v })} placeholder="El caso, el dato, los pasos. Frases cortas, una idea por línea." ariaLabel="Desarrollo" rows={5} />
-      </div>
-      <div>
-        <Label>Cierre / llamado a la acción</Label>
-        <TextArea value={s.cta} onCommit={(v) => setScript({ cta: v })} placeholder="Qué quieres que hagan después de verlo." ariaLabel="Cierre" rows={2} />
-      </div>
-
-      <div>
-        <Label right={shots.length ? `${shots.length} tomas` : undefined}>Lista de tomas</Label>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {shots.map((sh) => (
-            <CheckRow
-              key={sh.id}
-              checked={sh.done}
-              text={sh.text}
-              onToggle={() => setShots(shots.map((x) => (x.id === sh.id ? { ...x, done: !x.done } : x)))}
-              onRemove={() => setShots(shots.filter((x) => x.id !== sh.id))}
-            />
+        <div className="chips-plantilla">
+          {SHOT_TEMPLATES.filter((t) => !shots.some((x) => x.text === t)).map((t) => (
+            <button key={t} className="sugerencia" onClick={() => addShot(t)}>{t}</button>
           ))}
-          {shots.length === 0 && <Hint>Sin tomas todavía. Añade una o toca una plantilla.</Hint>}
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              value={newShot}
-              onChange={(e) => setNewShot(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addShot(newShot)}
-              placeholder="Nueva toma · Enter para añadir"
-              aria-label="Nueva toma"
-              className="tem-textarea"
-              style={{ ...INPUT, flex: 1 }}
-            />
-            <button className="press" onClick={() => addShot(newShot)} disabled={!newShot.trim()} style={BTN_GHOST}>Añadir</button>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {SHOT_TEMPLATES.filter((t) => !shots.some((x) => x.text === t)).map((t) => (
-              <TemplateChip key={t} text={`+ ${t}`} onPick={() => addShot(t)} />
-            ))}
-          </div>
         </div>
       </div>
     </div>
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  3 · Grabar                                                                 */
-/* -------------------------------------------------------------------------- */
+/* -------------------------------- 3 · Grabar ------------------------------ */
 
 export function GrabarPanel({ p, onTeleprompter }: { p: Proposal; onTeleprompter?: () => void }) {
   const { actions } = useStore();
-  const g = guideFor(p.script?.format);
-  const checklist = p.checklist?.length ? p.checklist : checklistFor(p.script?.format);
+  const format = pieceFormat(p);
+  const g = guideFor(format);
+  const checklist = p.checklist?.length ? p.checklist : checklistFor(format);
   const setChecklist = (next: CheckItem[]) => actions.updateFields(p.id, { checklist: next });
-  const guideTexts = g.before.join("|");
-  const checklistIsGuide = checklist.map((c) => c.text).join("|") === guideTexts;
   const shots = p.shots ?? [];
   const setShots = (next: CheckItem[]) => actions.updateFields(p.id, { shots: next });
   const done = shots.filter((s) => s.done).length;
   const allDone = shots.length > 0 && done === shots.length;
-  const title = `${p.line.pre}${p.line.key}${p.line.post}`;
+  const title = pieceTitle(p);
   const delivery = deliveryStatus(p);
   const deliveryOk = delivery.filter((d) => d.done).length;
-  const manual = p.delivery?.length ? p.delivery : deliveryFor(p.script?.format);
+  const manual = p.delivery?.length ? p.delivery : deliveryFor(format);
   const setManual = (next: CheckItem[]) => actions.updateFields(p.id, { delivery: next });
-  const [showGuide, setShowGuide] = useState(true);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      {/* Hoja de rodaje del formato */}
-      <div style={{ border: "1px solid var(--tem-border)", borderRadius: 16, padding: "12px 14px" }}>
-        <button
-          className="press-sm"
-          onClick={() => setShowGuide((v) => !v)}
-          aria-expanded={showGuide}
-          style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", boxSizing: "border-box" }}
-        >
-          <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".01em", color: "var(--tem-handle)" }}>
-            Hoja de rodaje · {g.name}
-          </span>
-          <span style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-orange)" }}>{showGuide ? "Ocultar" : "Ver"}</span>
-        </button>
-        {showGuide && (
-          <div style={{ marginTop: 12 }}>
-            <FormatGuide g={g} compact />
-          </div>
-        )}
-      </div>
+    <div className="panel">
+      <details className="guia__pliegue">
+        <summary>Hoja de rodaje: {g.name}</summary>
+        <FormatGuide g={g} />
+      </details>
 
-      <div>
-        <Label right={checklistIsGuide ? undefined : <button className="press-sm" onClick={() => setChecklist(checklistFor(p.script?.format))} style={{ all: "unset", cursor: "pointer", color: "var(--tem-orange)" }}>Usar la lista del formato</button>}>
-          Antes de grabar
-        </Label>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {checklist.map((c) => (
-            <CheckRow key={c.id} checked={c.done} text={c.text} onToggle={() => setChecklist(checklist.map((x) => (x.id === c.id ? { ...x, done: !x.done } : x)))} />
-          ))}
-        </div>
+      <div className="grupo">
+        <div className="grupo__cabeza">Antes de grabar</div>
+        {checklist.map((c) => (
+          <CheckRow key={c.id} checked={c.done} text={c.text} onToggle={() => setChecklist(checklist.map((x) => (x.id === c.id ? { ...x, done: !x.done } : x)))} />
+        ))}
       </div>
 
       {onTeleprompter && g.isVideo && (
-        <button
-          className="press invert-hover"
-          onClick={onTeleprompter}
-          disabled={!p.script?.hook}
-          title={p.script?.hook ? "Texto grande con desplazamiento automático" : "Escribe el guion para usar el teleprompter"}
-          style={{
-            all: "unset", cursor: "pointer", textAlign: "center", fontSize: 14, fontWeight: 500, color: "var(--tem-ink)",
-            border: "1px solid var(--tem-border)", padding: 12, borderRadius: 12, boxSizing: "border-box",
-          }}
-        >
-          Abrir teleprompter
-        </button>
+        <button className="tem-btn tem-btn--secundario" onClick={onTeleprompter} disabled={!p.script?.hook}>Abrir teleprompter</button>
       )}
 
-      <div>
-        <Label right={shots.length ? `${done} de ${shots.length}` : undefined}>{g.isVideo ? "Tomas y texto en pantalla" : "Material a entregar"}</Label>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {shots.map((sh, i) => (
-            <div key={sh.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <CheckRow big checked={sh.done} text={sh.text} onToggle={() => setShots(shots.map((x) => (x.id === sh.id ? { ...x, done: !x.done } : x)))} />
-              {g.isVideo && (
-                <div style={{ paddingLeft: 36, display: "flex", flexDirection: "column", gap: 4 }}>
-                  <TextInput
-                    value={sh.screen ?? ""}
-                    onCommit={(v) => actions.updateShot(p.id, sh.id, { screen: v })}
-                    placeholder="Texto en pantalla en esta toma (o «sin texto»)"
-                    ariaLabel={`Texto en pantalla · toma ${i + 1}`}
-                  />
-                  <div style={{ fontSize: 11, fontWeight: 400, color: "var(--tem-handle)", fontVariantNumeric: "tabular-nums" }}>
-                    Archivo: {suggestedFileName(g, title, i + 1)}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-          {shots.length === 0 && <Hint warn>No hay tomas: vuelve a Guion y añade al menos una.</Hint>}
-          {shots.length > 0 && !allDone && (
-            <button className="press" onClick={() => setShots(shots.map((x) => ({ ...x, done: true })))} style={{ ...BTN_GHOST, alignSelf: "flex-start" }}>
-              Marcar todas como grabadas
-            </button>
-          )}
-        </div>
-      </div>
-
-      {g.isVideo && (
-        <div>
-          <Label>Modo de edición</Label>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {EDIT_MODES.map((m) => {
-              const on = p.edit_mode === m.key;
-              return (
-                <button
-                  key={m.key}
-                  className="press-sm"
-                  onClick={() => actions.updateFields(p.id, { edit_mode: on ? null : m.key })}
-                  aria-pressed={on}
-                  title={m.help}
-                  style={{
-                    all: "unset", cursor: "pointer", flex: "1 1 120px", padding: "9px 12px", borderRadius: 12, boxSizing: "border-box",
-                    border: `1.5px solid ${on ? "var(--tem-orange)" : "var(--tem-ink)"}`, background: on ? "var(--tem-orange)" : "transparent", color: on ? "#fff" : "var(--tem-ink)",
-                  }}
-                >
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{m.key} · {m.name}</div>
-                  <div style={{ fontSize: 11, fontWeight: 400, lineHeight: 1.35, marginTop: 2, opacity: on ? 0.9 : 0.75 }}>{m.help}</div>
-                </button>
-              );
-            })}
-          </div>
-          <Hint>Se graba para el modo que corresponde: el editor no empieza sin saberlo.</Hint>
-        </div>
-      )}
-
-      <div>
-        <Label>{g.isVideo ? "Link del bruto" : "Link del material"}</Label>
-        <TextInput value={p.raw_url ?? ""} onCommit={(v) => actions.updateFields(p.id, { raw_url: v.trim() })} placeholder="https://drive.google.com/…" ariaLabel="Link del bruto" />
-        <Hint>El archivo pesado va por AirDrop al Mac y a Drive como respaldo; aquí solo el enlace. Nombre: {g.fileName}</Hint>
-      </div>
-
-      <div style={{ background: "var(--tem-bg)", borderRadius: 16, padding: "12px 14px" }}>
-        <Label right={`${deliveryOk} de ${delivery.length}`}>Entrega al editor</Label>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {delivery.map((d) =>
-            d.auto ? (
-              <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10 }} aria-label={`${d.text}: ${d.done ? "listo" : "falta"}`}>
-                <span style={{ width: 20, height: 20, flex: "none", borderRadius: 7, display: "grid", placeItems: "center", background: d.done ? "var(--tem-orange)" : "transparent", border: `1.5px solid ${d.done ? "var(--tem-orange)" : "var(--tem-border-strong)"}` }}>
-                  {d.done && <svg width={11} height={11} viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5 5 9.5 10 3" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-                </span>
-                <span style={{ flex: 1, fontSize: 13, fontWeight: 400, lineHeight: 1.35, opacity: d.done ? 0.55 : 1, textDecoration: d.done ? "line-through" : "none" }}>{d.text}</span>
-                <span style={{ fontSize: 10, fontWeight: 500, color: "var(--tem-handle)" }}>auto</span>
+      <div className="grupo">
+        <div className="grupo__cabeza">{g.isVideo ? "Tomas y texto en pantalla" : "Material a entregar"}{shots.length > 0 && <span>{done} de {shots.length}</span>}</div>
+        {shots.map((sh, i) => (
+          <div key={sh.id} className="toma">
+            <CheckRow checked={sh.done} text={sh.text} onToggle={() => setShots(shots.map((x) => (x.id === sh.id ? { ...x, done: !x.done } : x)))} />
+            {g.isVideo && (
+              <div className="toma__detalle">
+                <TextInput value={sh.screen ?? ""} onCommit={(v) => actions.updateShot(p.id, sh.id, { screen: v })} placeholder="Texto en pantalla, o «sin texto»" ariaLabel={`Texto en pantalla de la toma ${i + 1}`} />
+                <span className="tem-caption rompe">Archivo: {suggestedFileName(g, title, i + 1)}</span>
               </div>
-            ) : (
-              <CheckRow key={d.id} checked={d.done} text={d.text} onToggle={() => setManual(manual.map((x) => (x.id === d.id ? { ...x, done: !x.done } : x)))} />
-            ),
-          )}
+            )}
+          </div>
+        ))}
+        {shots.length === 0 && <p className="tem-help">No hay tomas: vuelve a Guion y añade al menos una.</p>}
+        {shots.length > 0 && !allDone && (
+          <button className="tem-btn tem-btn--texto btn-chico" style={{ alignSelf: "flex-start", paddingLeft: 0 }} onClick={() => setShots(shots.map((x) => ({ ...x, done: true })))}>
+            Marcar todas como grabadas
+          </button>
+        )}
+      </div>
+
+      {g.editMode && (
+        <div className="grupo">
+          <div className="grupo__cabeza">Modo de edición</div>
+          <div className="opciones">
+            {EDIT_MODES.map((m) => (
+              <button key={m.key} className="opcion opcion--bloque" aria-pressed={p.edit_mode === m.key} onClick={() => actions.updateFields(p.id, { edit_mode: p.edit_mode === m.key ? null : m.key })}>
+                {m.key} · {m.name}
+                <small>{m.help}</small>
+              </button>
+            ))}
+          </div>
         </div>
-        <Hint>Como en un editor: nada pasa a Editar hasta que todo esté marcado. Así el asistente no renderiza a medias.</Hint>
+      )}
+
+      <Field label={g.isVideo ? "Link del bruto" : "Link del material"} help={`El archivo va por AirDrop al Mac y a Drive como respaldo. Nombre: ${g.fileName}`}>
+        <TextInput value={p.raw_url ?? ""} onCommit={(v) => actions.updateFields(p.id, { raw_url: v.trim() })} placeholder="https://drive.google.com/…" ariaLabel="Link del bruto" />
+      </Field>
+
+      <div className="grupo">
+        <div className="grupo__cabeza">Entrega al editor<span>{deliveryOk} de {delivery.length}</span></div>
+        {delivery.map((d) =>
+          d.auto ? (
+            <CheckRow key={d.id} checked={d.done} text={d.text} disabled aside="automático" />
+          ) : (
+            <CheckRow key={d.id} checked={d.done} text={d.text} onToggle={() => setManual(manual.map((x) => (x.id === d.id ? { ...x, done: !x.done } : x)))} />
+          ),
+        )}
       </div>
     </div>
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  4 · Editar                                                                 */
-/* -------------------------------------------------------------------------- */
+/* -------------------------------- 4 · Editar ------------------------------ */
 
 export function EditarPanel({ p }: { p: Proposal }) {
   const { actions } = useStore();
-  const tagsText = p.tags.join(" ");
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {p.raw_url && (
-        <div style={{ fontSize: 12, fontWeight: 400, color: "var(--tem-handle)" }}>
-          Bruto: <a href={p.raw_url} target="_blank" rel="noreferrer" style={{ color: "var(--tem-orange)", fontWeight: 500, wordBreak: "break-all" }}>{p.raw_url}</a>
-        </div>
-      )}
-      <div>
-        <Label right="se guarda solo">Instrucciones de edición</Label>
-        <TextArea
-          value={p.notes ?? ""}
-          onCommit={(v) => actions.updateFields(p.id, { notes: v })}
-          placeholder="Cortes, ritmo, dónde van los subtítulos, qué texto aparece en pantalla…"
-          ariaLabel="Instrucciones de edición"
-          rows={6}
-        />
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-          <AiButton task="cortes" label="Proponer cortes" busyLabel="Pensando los cortes…" onClick={() => void actions.runCuts(p.id)} title="Añade cortes con tiempo y estilo de subtítulos a las instrucciones (se puede deshacer)" />
-          <AiButton task="caption" label={p.caption ? "Reescribir caption" : "Escribir caption"} busyLabel="Escribiendo el caption…" onClick={() => void actions.runCaption(p.id)} title="Caption y hashtags para las redes de la pieza (se puede deshacer)" />
-        </div>
-        <Hint>El corte, los subtítulos y las versiones se hacen fuera de la app; aquí quedan las instrucciones y los links.</Hint>
+    <div className="panel">
+      {p.raw_url && <p className="tem-small">Bruto: <a className="enlace" href={p.raw_url} target="_blank" rel="noreferrer">{p.raw_url}</a></p>}
+      <Field label="Instrucciones de edición">
+        <TextArea value={p.notes ?? ""} onCommit={(v) => actions.updateFields(p.id, { notes: v })} placeholder="Cortes, ritmo, subtítulos, qué texto aparece en pantalla" ariaLabel="Instrucciones de edición" rows={6} />
+      </Field>
+      <div className="fila">
+        <AiButton task="cortes" label="Proponer cortes" busyLabel="Pensando…" onClick={() => void actions.runCuts(p.id)} />
+        <AiButton task="caption" label={p.caption ? "Reescribir caption" : "Escribir caption"} busyLabel="Escribiendo…" onClick={() => void actions.runCaption(p.id)} />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <div>
-          <Label>Link del video final</Label>
+      <div className="dos">
+        <Field label="Link del video final">
           <TextInput value={p.final_url ?? ""} onCommit={(v) => actions.updateFields(p.id, { final_url: v.trim() })} placeholder="https://drive.google.com/…" ariaLabel="Link del video final" />
-        </div>
-        <div>
-          <Label>Link de la miniatura</Label>
+        </Field>
+        <Field label="Link de la miniatura">
           <TextInput value={p.thumbnail_url ?? ""} onCommit={(v) => actions.updateFields(p.id, { thumbnail_url: v.trim() })} placeholder="Opcional" ariaLabel="Link de la miniatura" />
-        </div>
+        </Field>
       </div>
-      <div>
-        <Label right="se guarda solo">Caption</Label>
-        <TextArea value={p.caption} onCommit={(v) => actions.updateCaption(p.id, v)} placeholder="El texto que acompaña la pieza." ariaLabel="Caption" rows={3} />
-      </div>
-      <div>
-        <Label>Hashtags</Label>
+      <Field label="Caption">
+        <TextArea value={p.caption} onCommit={(v) => actions.updateCaption(p.id, v)} ariaLabel="Caption" />
+      </Field>
+      <Field label="Hashtags">
         <TextInput
-          value={tagsText}
+          value={p.tags.join(" ")}
           onCommit={(v) => actions.updateFields(p.id, { tags: v.split(/[\s,]+/).filter(Boolean).map((t) => (t.startsWith("#") ? t : `#${t}`)) })}
           placeholder="#marca #TEM"
           ariaLabel="Hashtags"
         />
-      </div>
+      </Field>
     </div>
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  5 · Listo                                                                  */
-/* -------------------------------------------------------------------------- */
+/* -------------------------------- 5 · Listo ------------------------------- */
 
 export function ListoPanel({ p }: { p: Proposal }) {
-  const s = useStore();
-  const { actions } = s;
-  const activeCount = p.platforms.filter((t) => !s.pubOff[t]).length;
-  const activeNames = p.platforms.filter((t) => !s.pubOff[t]).map((t) => PLATFORM_LABEL[t]).join(", ");
+  const { actions } = useStore();
+  const extra = p.platforms.filter((t) => !PUBLISH_TAGS.includes(t));
+  const tags: PlatformTag[] = [...PUBLISH_TAGS, ...extra];
+  const names = p.platforms.map((t) => PLATFORM_LABEL[t]).join(", ");
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div>
-        <Label>Día y hora</Label>
-        {/* H05 — selectores en vez de texto libre */}
-        <div style={{ display: "flex", gap: 8 }}>
-          <select value={p.day} onChange={(e) => actions.updateSchedule(p.id, { day: Number(e.target.value) })} aria-label="Día de publicación" style={{ ...SELECT, flex: 1 }}>
+    <div className="panel">
+      <div className="dos">
+        <Field label="Día">
+          <select className="tem-select" value={p.day} onChange={(e) => actions.updateSchedule(p.id, { day: Number(e.target.value) })} aria-label="Día de publicación">
             {DAY_NAMES_FULL.map((d, i) => <option key={d} value={i}>{d}</option>)}
           </select>
-          <input type="time" value={p.time} onChange={(e) => actions.updateSchedule(p.id, { time: e.target.value })} aria-label="Hora de publicación" style={{ ...SELECT, width: 118 }} />
-        </div>
-        <Hint>{p.time ? `Sale el ${DAY_NAMES_FULL[p.day].toLowerCase()} a las ${p.time}${activeNames ? ` en ${activeNames}` : ""}.` : "Sin hora: el asistente sugiere la mejor."}</Hint>
+        </Field>
+        <Field label="Hora">
+          <input className="tem-input" type="time" value={p.time} onChange={(e) => actions.updateSchedule(p.id, { time: e.target.value })} aria-label="Hora de publicación" />
+        </Field>
       </div>
-      <div>
-        <Label>Publicar en</Label>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-          {p.platforms.map((t) => {
-            const on = !s.pubOff[t];
-            return (
-              <button
-                key={t}
-                className="press-sm"
-                onClick={() => actions.togglePub(t)}
-                aria-pressed={on}
-                style={{
-                  all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 500, padding: "7px 13px", borderRadius: 999,
-                  border: `1.5px solid ${on ? "var(--tem-orange)" : "var(--tem-ink)"}`,
-                  background: on ? "var(--tem-orange)" : "var(--tem-surface)", color: on ? "#fff" : "var(--tem-ink)",
-                }}
-              >
-                {PLATFORM_LABEL[t]}
-              </button>
-            );
-          })}
+      <Field
+        label="Publicar en"
+        warn={p.platforms.length === 0}
+        help={p.platforms.length === 0 ? "Elige al menos una red." : `Sale el ${DAY_NAMES_FULL[p.day].toLowerCase()}${p.time ? ` a las ${p.time}` : ""} en ${names}.`}
+      >
+        <div className="opciones" role="group" aria-label="Redes">
+          {tags.map((t) => (
+            <button key={t} className="opcion" aria-pressed={p.platforms.includes(t)} onClick={() => actions.togglePlatform(p.id, t)}>{PLATFORM_LABEL[t]}</button>
+          ))}
         </div>
-        <Hint warn={activeCount === 0}>
-          {activeCount === 0 ? "Activa al menos una red para poder programar." : "Toca una red para quitarla o volver a incluirla."}
-        </Hint>
-      </div>
-      {p.final_url && (
-        <div>
-          <Label>Video final</Label>
-          <a href={p.final_url} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 500, color: "var(--tem-orange)", wordBreak: "break-all" }}>{p.final_url}</a>
-        </div>
-      )}
-      {hasPublishing ? <PublishBlock p={p} /> : <Hint>Por ahora publicas tú: descarga la imagen, copia el caption y sube el video final.</Hint>}
+      </Field>
+      {p.final_url && <p className="tem-small">Video final: <a className="enlace" href={p.final_url} target="_blank" rel="noreferrer">{p.final_url}</a></p>}
+      {hasPublishing ? <PublishBlock p={p} /> : <p className="tem-help">La publicación no está configurada en este entorno.</p>}
     </div>
   );
 }
 
-/** Próxima fecha (ISO) del día/hora de la pieza, siempre en el futuro. */
+/** Próxima fecha (ISO) del día y hora de la pieza, siempre en el futuro. */
 function nextSlot(day: number, time: string): string | null {
   if (!time) return null;
   const [hh, mm] = time.split(":").map(Number);
@@ -471,63 +305,60 @@ function nextSlot(day: number, time: string): string | null {
   return d.toISOString();
 }
 
-/** Publicar ahora / programar en las redes activas (robot n8n + Upload-Post). */
+/** Publicar ahora o programar en las redes elegidas. */
 function PublishBlock({ p }: { p: Proposal }) {
   const s = useStore();
   const { actions } = s;
-  const nets = [...new Set(p.platforms.filter((t) => !s.pubOff[t]).map((t) => TAG_TO_NETWORK[t]).filter((n): n is Network => Boolean(n)))];
+  const [trial, setTrial] = useState(false);
+  const nets = [...new Set(p.platforms.map((t) => TAG_TO_NETWORK[t]).filter((n): n is Network => Boolean(n)))];
   const notConnected = nets.filter((n) => !s.connections[n]);
   const busy = s.publishing === p.id;
   const slot = nextSlot(p.day, p.time);
-  const missing = !p.final_url ? "Falta el link del video final (en Editar)." : nets.length === 0 ? "Activa al menos una red." : notConnected.length ? `Conecta ${notConnected.join(", ")} en Perfil.` : null;
-  const btn = (label: string, onClick: () => void, primary: boolean) => (
-    <button
-      className={primary ? "press" : "press invert-hover"}
-      onClick={onClick}
-      disabled={Boolean(missing) || busy}
-      title={missing ?? label}
-      style={{
-        all: "unset", cursor: "pointer", flex: 1, textAlign: "center", fontSize: 13, fontWeight: 500, padding: "10px 14px", borderRadius: 999, boxSizing: "border-box",
-        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-        background: primary ? "var(--tem-ink)" : "transparent", color: primary ? "#fff" : "var(--tem-ink)", border: primary ? "none" : "1px solid var(--tem-border)",
-      }}
-    >
-      {busy && <span className="spinner" aria-hidden="true" />}
-      {busy ? "Publicando…" : label}
-    </button>
-  );
+  const missing = !p.final_url ? "Falta el link del video final, en Editar." : nets.length === 0 ? "Elige al menos una red." : notConnected.length ? `Conecta ${notConnected.join(", ")} en Perfil.` : null;
+  const canTrial = nets.includes("Instagram") && guideFor(pieceFormat(p)).key === "reel";
+  const opts = canTrial && trial ? { trial: true } : undefined;
   return (
-    <div style={{ background: "var(--tem-bg)", borderRadius: 16, padding: "12px 14px" }}>
-      <Label>Publicar en las redes</Label>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {btn("Publicar ahora", () => void actions.publishPiece(p.id, null), true)}
-        {slot && btn(`Programar · ${DAY_NAMES_FULL[p.day]} ${p.time}`, () => void actions.publishPiece(p.id, slot), false)}
+    <div className="grupo">
+      <div className="grupo__cabeza">Publicar en las redes</div>
+      {canTrial && (
+        <CheckRow checked={trial} text="Reel de prueba: en Instagram lo ven solo quienes no te siguen" onToggle={() => setTrial((v) => !v)} />
+      )}
+      <div className="publicar-botones">
+        <button className="tem-btn tem-btn--naranja" onClick={() => void actions.publishPiece(p.id, null, opts)} disabled={Boolean(missing) || busy}>
+          {busy && <span className="spinner" aria-hidden="true" />}
+          {busy ? "Publicando…" : "Publicar ahora"}
+        </button>
+        {slot && (
+          <button className="tem-btn tem-btn--secundario" onClick={() => void actions.publishPiece(p.id, slot, opts)} disabled={Boolean(missing) || busy}>
+            Programar: {DAY_NAMES_FULL[p.day]} {p.time}
+          </button>
+        )}
       </div>
-      <Hint warn={Boolean(missing)}>{missing ?? `Sube el video final a ${nets.join(", ")} con el caption de la pieza. Tarda lo que tarde el video en subir.`}</Hint>
+      <p className="tem-help">{missing ?? `Sube el video final a ${nets.join(", ")} con el caption de la pieza.`}</p>
       {p.posts && <PostsList posts={p.posts} />}
     </div>
   );
 }
 
+const POST_NAME: Record<string, string> = { instagram: "Instagram", facebook: "Facebook", threads: "Threads", tiktok: "TikTok", youtube: "YouTube", linkedin: "LinkedIn" };
+
 /** Resultado por red: link, programada o error. */
 function PostsList({ posts }: { posts: Record<string, PostResult> }) {
-  const NAME: Record<string, string> = { instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube", linkedin: "LinkedIn" };
   return (
-    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+    <div className="pila pila--chica">
       {Object.entries(posts).map(([k, r]) => (
-        <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 500 }}>
-          <span style={{ width: 8, height: 8, borderRadius: 999, flex: "none", background: r.ok ? "var(--tem-orange)" : "var(--tem-handle)" }} />
-          <span style={{ fontWeight: 600 }}>{NAME[k] ?? k}</span>
+        <div key={k} className="resultado-red">
+          <span>{POST_NAME[k] ?? k}</span>
           {r.url ? (
-            <a href={r.url} target="_blank" rel="noreferrer" style={{ color: "var(--tem-orange)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.url}</a>
+            <a className="enlace" href={r.url} target="_blank" rel="noreferrer">{r.url}</a>
           ) : r.scheduled ? (
-            <span style={{ color: "var(--tem-handle)" }}>programada{r.scheduled_date ? ` · ${new Date(r.scheduled_date).toLocaleString("es-CL", { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : ""}</span>
+            <span className="tem-tag">Programada{r.scheduled_date ? `: ${new Date(r.scheduled_date).toLocaleString("es-CL", { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : ""}</span>
           ) : r.pending ? (
-            <span style={{ color: "var(--tem-handle)" }}>subiendo…</span>
+            <span className="tem-tag">Subiendo</span>
           ) : r.ok ? (
-            <span style={{ color: "var(--tem-handle)" }}>publicada</span>
+            <span className="tem-tag tem-tag--ok">Publicada</span>
           ) : (
-            <span style={{ color: "var(--tem-orange)" }}>{r.error ?? "falló"}</span>
+            <span className="tem-tag tem-tag--error">{r.error ?? "Falló"}</span>
           )}
         </div>
       ))}
@@ -535,9 +366,7 @@ function PostsList({ posts }: { posts: Record<string, PostResult> }) {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  6 · Publicado                                                              */
-/* -------------------------------------------------------------------------- */
+/* ------------------------------ 6 · Publicado ----------------------------- */
 
 const EMPTY_RESULTS: Results = { views: null, likes: null, saves: null, comments: null, learned: "" };
 
@@ -549,56 +378,36 @@ export function PublicadoPanel({ p }: { p: Proposal }) {
     { k: "views", label: "Vistas" }, { k: "likes", label: "Me gusta" }, { k: "saves", label: "Guardados" }, { k: "comments", label: "Comentarios" },
   ];
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {p.published_at && <Hint>Publicada el {new Date(p.published_at).toLocaleDateString("es-CL", { day: "numeric", month: "long" })}.</Hint>}
+    <div className="panel">
+      {p.published_at && <p className="tem-help">Publicada el {new Date(p.published_at).toLocaleDateString("es-CL", { day: "numeric", month: "long" })}.</p>}
       {p.posts && Object.keys(p.posts).length > 0 && (
-        <div>
-          <Label>En las redes</Label>
+        <div className="grupo">
+          <div className="grupo__cabeza">En las redes</div>
           <PostsList posts={p.posts} />
         </div>
       )}
-      <div>
-        <Label right="se guarda solo">Resultados</Label>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-          {fields.map(({ k, label }) => (
-            <div key={k}>
-              <div style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-handle)", marginBottom: 4 }}>{label}</div>
-              <NumberInput value={r[k]} onCommit={(v) => setR({ [k]: v })} ariaLabel={label} />
-            </div>
-          ))}
-        </div>
+      <div className="resultados">
+        {fields.map(({ k, label }) => (
+          <Field key={k} label={label}>
+            <TextInput
+              value={r[k] == null ? "" : String(r[k])}
+              onCommit={(v) => {
+                const n = Number(v.replace(/[^\d]/g, ""));
+                setR({ [k]: v.trim() === "" || Number.isNaN(n) ? null : n });
+              }}
+              ariaLabel={label}
+              alignRight
+            />
+          </Field>
+        ))}
       </div>
-      <div>
-        <Label>¿Qué aprendimos?</Label>
-        <TextArea value={r.learned} onCommit={(v) => setR({ learned: v })} placeholder="Tres líneas: qué funcionó, qué no y qué probar la próxima vez." ariaLabel="Qué aprendimos" rows={3} />
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-          <AiButton task="aprendizaje" label="¿Qué aprendimos?" busyLabel="Leyendo los resultados…" onClick={() => void actions.runLearning(p.id)} title="Tres líneas a partir de los resultados y una idea para la próxima pieza (se puede deshacer)" />
-          <button
-            className="press invert-hover"
-            onClick={() => actions.ideaFromLearning(p.id)}
-            title="Crea una idea nueva en el tablero con lo aprendido (se puede deshacer)"
-            style={{ ...BTN_SECONDARY, fontSize: 12, padding: "8px 12px" }}
-          >
-            Crear idea a partir de esto
-          </button>
-        </div>
-        <Hint>El aprendizaje vuelve a Ideas: así se cierra el ciclo.</Hint>
+      <Field label="¿Qué aprendimos?" help="Lo aprendido vuelve a Ideas: así se cierra el ciclo.">
+        <TextArea value={r.learned} onCommit={(v) => setR({ learned: v })} placeholder="Qué funcionó, qué no y qué probar la próxima vez" ariaLabel="Qué aprendimos" />
+      </Field>
+      <div className="fila">
+        <AiButton task="aprendizaje" label="Resumir aprendizaje" busyLabel="Leyendo…" onClick={() => void actions.runLearning(p.id)} />
+        <button className="tem-btn tem-btn--secundario btn-chico" onClick={() => actions.ideaFromLearning(p.id)}>Crear idea a partir de esto</button>
       </div>
     </div>
-  );
-}
-
-function NumberInput({ value, onCommit, ariaLabel }: { value: number | null; onCommit: (v: number | null) => void; ariaLabel: string }) {
-  return (
-    <TextInput
-      value={value == null ? "" : String(value)}
-      onCommit={(v) => {
-        const n = Number(v.replace(/[^\d]/g, ""));
-        onCommit(v.trim() === "" || Number.isNaN(n) ? null : n);
-      }}
-      placeholder="—"
-      ariaLabel={ariaLabel}
-      style={{ textAlign: "center", fontWeight: 500 }}
-    />
   );
 }

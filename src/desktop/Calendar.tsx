@@ -1,27 +1,23 @@
 import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useStore } from "../store";
-import {
-  DAY,
-  WK_ABBR,
-  noon,
-  weekRangeLabel,
-} from "../lib/dates";
-import CalendarPopover from "../components/CalendarPopover";
+import { DAY, WK_ABBR, mondayOf, noon, weekRangeLabel } from "../lib/dates";
+import { PLATFORM_LABEL, PUBLISH_TAGS } from "../lib/platforms";
+import LoteSheet from "../components/LoteSheet";
 import PieceCard from "../components/PieceCard";
 import type { PlatformTag } from "../types";
 
-const TODAY = new Date(2026, 6, 23, 12).getTime();
-const PLAT_FILTERS: (PlatformTag | "Todas")[] = ["Todas", "IG", "TikTok", "Shorts", "YouTube", "in"];
-const PLAT_FILTER_LABEL: Record<string, string> = {
-  Todas: "Todas", IG: "Instagram", TikTok: "TikTok", Shorts: "Shorts", YouTube: "YouTube", in: "LinkedIn",
-};
+const FILTERS: (PlatformTag | "Todas")[] = ["Todas", ...PUBLISH_TAGS];
 
 export default function Calendar() {
   const s = useStore();
   const { actions } = s;
   const [platFilter, setPlatFilter] = useState<PlatformTag | "Todas">("Todas");
+  const [lote, setLote] = useState(false);
 
   const monday = noon(s.calWeekStart);
+  const today = noon(Date.now());
+  const isThisWeek = mondayOf(today) === monday;
   // Solo lo programado: piezas en Listo o Publicado (lo demás vive en el tablero).
   const visible = s.proposals.filter(
     (p) =>
@@ -30,128 +26,51 @@ export default function Calendar() {
       (platFilter === "Todas" || p.platforms.includes(platFilter)),
   );
 
-  const arrowBtn: React.CSSProperties = {
-    width: 38, height: 38, borderRadius: 12, background: "var(--tem-surface)",
-    border: "1px solid var(--tem-border)", display: "grid", placeItems: "center", cursor: "pointer",
-  };
-
   return (
-    <div style={{ padding: "32px 40px" }}>
-      <div className="eyebrow">Tu semana</div>
-      <div style={{ marginTop: 4, fontSize: 13, fontWeight: 400, color: "var(--tem-handle)" }}>
-        Aquí aparece lo que está en Listo o Publicado. Lo que se produce vive en el tablero.
+    <div className="pagina">
+      <div className="cabecera">
+        <div className="cabecera__texto">
+          <h1 className="tem-h1">Calendario</h1>
+          <p className="tem-caption">Lo que está en Listo o Publicado.</p>
+        </div>
+        <button className="tem-btn tem-btn--secundario" onClick={() => setLote(true)}>Programar en lote</button>
       </div>
 
-      {/* fila de controles */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 10, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, position: "relative" }}>
-          <button className="press" style={arrowBtn} onClick={() => actions.calWeekNav(-1)} aria-label="Semana anterior">
-            <Triangle dir="left" />
-          </button>
-          <button className="press" style={arrowBtn} onClick={() => actions.calWeekNav(1)} aria-label="Semana siguiente">
-            <Triangle dir="right" />
-          </button>
-          <div style={{ position: "relative" }}>
-            <button
-              className="press"
-              onClick={actions.toggleCalPicker}
-              style={{
-                display: "flex", alignItems: "center", gap: 8, background: "var(--tem-surface)",
-                border: "1px solid var(--tem-border)", borderRadius: 12, padding: "10px 16px", cursor: "pointer",
-              }}
-            >
-              <span style={{ fontSize: 14, fontWeight: 500 }}>{weekRangeLabel(monday)}</span>
-              <span style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)" }}>elegir</span>
+      <div className="fila fila--entre" style={{ marginBottom: 16 }}>
+        <div className="nav-semana">
+          <button className="icono-btn" onClick={() => actions.calWeekNav(-1)} aria-label="Semana anterior"><ChevronLeft size={18} strokeWidth={1.5} /></button>
+          <span className="nav-semana__rango">{weekRangeLabel(monday)}</span>
+          <button className="icono-btn" onClick={() => actions.calWeekNav(1)} aria-label="Semana siguiente"><ChevronRight size={18} strokeWidth={1.5} /></button>
+          {!isThisWeek && <button className="tem-btn tem-btn--texto" onClick={actions.calToday}>Esta semana</button>}
+        </div>
+        <div className="filtros" style={{ marginBottom: 0 }} role="group" aria-label="Filtrar por red">
+          {FILTERS.map((f) => (
+            <button key={f} className="filtro" aria-pressed={platFilter === f} onClick={() => setPlatFilter(f)}>
+              {f === "Todas" ? "Todas" : PLATFORM_LABEL[f]}
             </button>
-            {s.calPickerOpen && (
-              <CalendarPopover
-                year={s.calPickerY}
-                month={s.calPickerM}
-                onPrevMonth={() => actions.calPickerNav(-1)}
-                onNextMonth={() => actions.calPickerNav(1)}
-                onPickDay={actions.calPickDay}
-                onClose={actions.closeCalPicker}
-                helpText="Elige un día para ver esa semana."
-                cellStyle={(ms) => {
-                  const inWeek = ms >= monday && ms <= monday + 6 * DAY;
-                  if (ms === TODAY) return { bg: "var(--tem-ink)", fg: "#fff" };
-                  return { bg: inWeek ? "rgba(244,124,60,0.24)" : "transparent", fg: "var(--tem-ink)" };
-                }}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* filtros de plataforma */}
-        <div style={{ display: "flex", gap: 8, marginLeft: "auto", flexWrap: "wrap" }}>
-          {PLAT_FILTERS.map((f) => {
-            const active = platFilter === f;
-            return (
-              <button
-                key={f}
-                className="press"
-                onClick={() => setPlatFilter(f)}
-                style={{
-                  border: "1px solid var(--tem-border)", borderRadius: 999, padding: "7px 14px",
-                  fontSize: 12, fontWeight: 500, cursor: "pointer",
-                  background: active ? "var(--tem-ink)" : "var(--tem-surface)",
-                  color: active ? "#fff" : "var(--tem-ink)",
-                }}
-              >
-                {PLAT_FILTER_LABEL[f]}
-              </button>
-            );
-          })}
+          ))}
         </div>
       </div>
 
-      {/* rejilla semanal */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginTop: 24 }}>
+      <div className="semana">
         {WK_ABBR.map((wk, i) => {
-          const d = new Date(monday + i * DAY);
+          const ms = monday + i * DAY;
           const items = visible.filter((p) => p.day === i);
           return (
-            <div key={i} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)", padding: "0 2px" }}>
-                {wk} {d.getDate()}
-              </div>
+            <div key={wk} className="dia">
+              <div className={`dia__nombre${noon(ms) === today ? " dia__nombre--hoy" : ""}`}>{wk} {new Date(ms).getDate()}</div>
               {s.loading ? (
                 <div className="skeleton" style={{ height: 96 }} aria-busy="true" />
               ) : items.length === 0 ? (
-                <EmptySlot />
+                <p className="tem-caption dia__vacio">Libre</p>
               ) : (
-                items.map((p) => <PieceCard key={p.id} p={p} showStage />)
+                items.map((p) => <PieceCard key={p.id} p={p} />)
               )}
             </div>
           );
         })}
       </div>
-    </div>
-  );
-}
-
-function Triangle({ dir }: { dir: "left" | "right" }) {
-  return (
-    <span
-      style={{
-        width: 0, height: 0, borderTop: "5px solid transparent", borderBottom: "5px solid transparent",
-        [dir === "left" ? "borderRight" : "borderLeft"]: "7px solid var(--tem-ink)",
-      }}
-    />
-  );
-}
-
-/** H10 — el hueco explica cómo llenarse. */
-function EmptySlot() {
-  return (
-    <div
-      style={{
-        border: "1.5px dashed var(--tem-border-empty)", borderRadius: 16, padding: "14px 15px",
-        fontSize: 12, fontWeight: 400, color: "#9A9A9A", minHeight: 64, display: "grid", placeItems: "center",
-        textAlign: "center", lineHeight: 1.4,
-      }}
-    >
-      Día libre · pasa una pieza a Listo para que aparezca aquí
+      {lote && <LoteSheet onClose={() => setLote(false)} />}
     </div>
   );
 }

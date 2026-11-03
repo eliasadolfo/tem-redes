@@ -1,65 +1,70 @@
+import { useEffect, useMemo } from "react";
 import { useStore } from "../store";
-import { GALLERY, LIB_CHIPS, HANDLE } from "../data/mock";
+import { HANDLE, VARIANTS } from "../data/mock";
+import { PLATFORM_LABEL, PUBLISH_TAGS, platformsStr } from "../lib/platforms";
+import { fmtInt, latestPerPost } from "../lib/metrics";
+import { guideFor, pieceFormat } from "../lib/formatos";
 import Card916 from "../components/Card916";
+import type { PlatformTag } from "../types";
 
+const FILTERS: (PlatformTag | "Todas")[] = ["Todas", ...PUBLISH_TAGS];
+
+/** Biblioteca: lo publicado de verdad, con su alcance si ya se midió. */
 export default function Library() {
-  const { libFilter, actions } = useStore();
-  const items = libFilter === "Todas" ? GALLERY : GALLERY.filter((g) => g.net === libFilter);
+  const { proposals, metrics, libFilter, loading, actions } = useStore();
+
+  useEffect(() => {
+    void actions.loadMetrics();
+  }, [actions]);
+
+  const reachById = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of latestPerPost(metrics)) {
+      if (r.proposal_id && r.reach !== null) m.set(r.proposal_id, (m.get(r.proposal_id) ?? 0) + r.reach);
+    }
+    return m;
+  }, [metrics]);
+
+  const published = proposals.filter((p) => p.status !== "rejected" && p.stage === "publicado");
+  const items = libFilter === "Todas" ? published : published.filter((p) => p.platforms.includes(libFilter));
 
   return (
-    <div style={{ padding: "32px 40px" }}>
-      <div className="eyebrow">Biblioteca</div>
-      <h1 style={{ margin: "6px 0 20px", fontWeight: 600, fontSize: 30, letterSpacing: "-.02em" }}>
-        Tu contenido
-      </h1>
-
-      {/* filtros */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
-        {LIB_CHIPS.map((f) => {
-          const active = libFilter === f;
-          return (
-            <button
-              key={f}
-              className="press"
-              onClick={() => actions.setLib(f)}
-              style={{
-                all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 500, padding: "7px 14px",
-                borderRadius: 999, border: "1px solid var(--tem-border)",
-                background: active ? "var(--tem-ink)" : "var(--tem-surface)",
-                color: active ? "#fff" : "var(--tem-ink)",
-              }}
-            >
-              {f}
-            </button>
-          );
-        })}
+    <div className="pagina">
+      <div className="cabecera">
+        <div className="cabecera__texto">
+          <h1 className="tem-h1">Biblioteca</h1>
+          <p className="tem-caption">Lo que ya salió.</p>
+        </div>
       </div>
 
-      {/* galería */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(168px, 1fr))",
-          gap: 18,
-        }}
-      >
-        {items.map((g, i) => (
-          <div key={i} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Card916
-              eyebrow={g.eyebrow}
-              line={{ pre: g.pre, key: g.key, post: g.post }}
-              bg={g.bg}
-              fg={g.fg}
-              handle={HANDLE}
-              style={{ boxShadow: "var(--sh-card)" }}
-            />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 2px" }}>
-              <span style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-handle)" }}>{g.platStr}</span>
-              <span style={{ fontSize: 12, fontWeight: 600 }}>{g.reach}</span>
-            </div>
-          </div>
+      <div className="filtros" role="group" aria-label="Filtrar por red">
+        {FILTERS.map((f) => (
+          <button key={f} className="filtro" aria-pressed={libFilter === f} onClick={() => actions.setLib(f)}>
+            {f === "Todas" ? "Todas" : PLATFORM_LABEL[f]}
+          </button>
         ))}
       </div>
+
+      {loading ? (
+        <div className="galeria">{[0, 1, 2, 3].map((i) => <div key={i} className="skeleton" style={{ aspectRatio: "9 / 16" }} aria-busy="true" />)}</div>
+      ) : items.length === 0 ? (
+        <div className="tem-card">
+          <div className="vacio">
+            <h2 className="tem-title">{published.length === 0 ? "Todavía no hay piezas publicadas" : "Nada publicado en esta red"}</h2>
+            <p>Cuando una pieza pase a Publicado aparece aquí con su alcance.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="galeria">
+          {items.map((p) => (
+            <button key={p.id} className="galeria__item" onClick={() => actions.openWork(p.id)}>
+              <Card916 line={p.line} variant={VARIANTS[0]} handle={HANDLE} aspect={guideFor(pieceFormat(p)).aspect} />
+              <span className="tem-caption">{platformsStr(p.platforms)}</span>
+              {reachById.has(p.id) && <span className="tem-small">{fmtInt(reachById.get(p.id) ?? null)} de alcance</span>}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

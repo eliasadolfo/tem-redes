@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Maximize2, Minimize2, Pause, Play, X } from "lucide-react";
 import { useStore } from "../store";
+import { pieceTitle } from "../lib/platforms";
 import { scriptText } from "../lib/stages";
 import type { Proposal } from "../types";
 import { CheckRow } from "./stages/ui";
@@ -8,20 +9,20 @@ import { CheckRow } from "./stages/ui";
 interface Props {
   p: Proposal;
   onClose: () => void;
-  /** "Grabada ✓": marca las tomas, pide el link del bruto y pasa a Editar. */
+  /** "Grabada": pide el link del bruto y pasa a Editar. */
   onDone?: () => void;
 }
 
 /**
- * Teleprompter: texto grande sobre fondo negro, desplazamiento automático con
- * velocidad ajustable y pantalla completa. Espacio = pausa/sigue, Esc = cerrar.
+ * Teleprompter: texto grande sobre negro, desplazamiento automático con velocidad
+ * ajustable y pantalla completa. Espacio = pausa o sigue, Esc = cerrar.
  */
 export default function Teleprompter({ p, onClose, onDone }: Props) {
   const { actions } = useStore();
   const text = scriptText(p) || "Esta pieza todavía no tiene guion. Vuelve a Guion y escríbelo.";
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(40); // px por segundo
-  const [size, setSize] = useState(44);
+  const [size, setSize] = useState(() => (window.innerWidth <= 720 ? 32 : 44));
   const [full, setFull] = useState(Boolean(document.fullscreenElement));
   const box = useRef<HTMLDivElement>(null);
   const shots = p.shots ?? [];
@@ -44,10 +45,11 @@ export default function Teleprompter({ p, onClose, onDone }: Props) {
     return () => cancelAnimationFrame(raf);
   }, [playing, speed]);
 
-  // Atajos: espacio pausa/sigue, Esc cierra (H07)
+  // Atajos: espacio pausa o sigue, Esc cierra (H07)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const typing = (e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA";
+      const tag = (e.target as HTMLElement)?.tagName;
+      const typing = tag === "INPUT" || tag === "TEXTAREA";
       if (e.key === " " && !typing) {
         e.preventDefault();
         setPlaying((v) => !v);
@@ -79,62 +81,40 @@ export default function Teleprompter({ p, onClose, onDone }: Props) {
   const toggleShot = (id: string) =>
     actions.updateFields(p.id, { shots: shots.map((s) => (s.id === id ? { ...s, done: !s.done } : s)) });
 
-  const ctl: React.CSSProperties = {
-    all: "unset", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, color: "#fff",
-    fontSize: 13, fontWeight: 500, padding: "9px 12px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,.35)",
-  };
-
   return (
-    <div
-      role="dialog"
-      aria-label="Teleprompter"
-      style={{ position: "fixed", inset: 0, zIndex: 100, background: "#000", color: "#fff", display: "flex", flexDirection: "column", fontFamily: "var(--font-ui)" }}
-    >
-      {/* controles */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px", flexWrap: "wrap", borderBottom: "1px solid rgba(255,255,255,.12)" }}>
-        <button className="press" onClick={() => setPlaying((v) => !v)} style={{ ...ctl, background: playing ? "transparent" : "var(--tem-orange)", borderColor: playing ? "rgba(255,255,255,.35)" : "var(--tem-orange)" }} title="Espacio">
-          {playing ? <Pause size={16} strokeWidth={2.4} /> : <Play size={16} strokeWidth={2.4} />}
+    <div className="tele" role="dialog" aria-label="Teleprompter">
+      <div className="tele__barra">
+        <button className="tele__control tele__control--empezar" onClick={() => setPlaying((v) => !v)}>
+          {playing ? <Pause size={16} strokeWidth={1.5} aria-hidden="true" /> : <Play size={16} strokeWidth={1.5} aria-hidden="true" />}
           {playing ? "Pausa" : "Empezar"}
         </button>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,.7)" }}>
+        <label className="tele__rango">
           Velocidad
-          <input type="range" min={10} max={120} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} aria-label="Velocidad" style={{ width: 110, accentColor: "#F47C3C" }} />
+          <input type="range" min={10} max={120} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} aria-label="Velocidad" />
         </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,.7)" }}>
+        <label className="tele__rango">
           Tamaño
-          <input type="range" min={24} max={80} value={size} onChange={(e) => setSize(Number(e.target.value))} aria-label="Tamaño del texto" style={{ width: 90, accentColor: "#F47C3C" }} />
+          <input type="range" min={24} max={80} value={size} onChange={(e) => setSize(Number(e.target.value))} aria-label="Tamaño del texto" />
         </label>
-        <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 400, color: "rgba(255,255,255,.55)" }}>
-          {p.line.pre}{p.line.key}{p.line.post}
-        </span>
-        <button className="press" onClick={toggleFull} style={ctl} title={full ? "Salir de pantalla completa" : "Pantalla completa"}>
-          {full ? <Minimize2 size={16} strokeWidth={2.4} /> : <Maximize2 size={16} strokeWidth={2.4} />}
+        <span className="tele__titulo">{pieceTitle(p)}</span>
+        <button className="tele__control" onClick={toggleFull} aria-label={full ? "Salir de pantalla completa" : "Pantalla completa"}>
+          {full ? <Minimize2 size={16} strokeWidth={1.5} /> : <Maximize2 size={16} strokeWidth={1.5} />}
         </button>
-        <button className="press" onClick={close} style={ctl} aria-label="Cerrar teleprompter (Esc)" title="Cerrar (Esc)">
-          <X size={16} strokeWidth={2.4} />
+        <button className="tele__control" onClick={close} aria-label="Cerrar teleprompter">
+          <X size={16} strokeWidth={1.5} />
         </button>
       </div>
 
-      {/* texto */}
-      <div ref={box} onClick={() => setPlaying((v) => !v)} style={{ flex: 1, overflowY: "auto", padding: "40vh 8vw", scrollBehavior: "auto", cursor: "pointer" }} title="Toca para pausar o seguir">
-        <div style={{ fontSize: size, lineHeight: 1.35, fontWeight: 600, letterSpacing: "-.01em", whiteSpace: "pre-wrap", maxWidth: 960, margin: "0 auto" }}>
-          {text}
-        </div>
+      <div ref={box} className="tele__texto" onClick={() => setPlaying((v) => !v)}>
+        <div className="tele__guion" style={{ fontSize: size }}>{text}</div>
       </div>
 
-      {/* tomas + Grabada */}
       {(shots.length > 0 || onDone) && (
-        <div style={{ borderTop: "1px solid rgba(255,255,255,.12)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", flex: 1, minWidth: 0 }}>
-            {shots.map((s) => (
-              <CheckRow key={s.id} checked={s.done} text={s.text} onToggle={() => toggleShot(s.id)} />
-            ))}
+        <div className="tele__pie">
+          <div className="tele__tomas">
+            {shots.map((s) => <CheckRow key={s.id} checked={s.done} text={s.text} onToggle={() => toggleShot(s.id)} />)}
           </div>
-          {onDone && (
-            <button className="press" onClick={onDone} style={{ ...ctl, background: "var(--tem-orange)", borderColor: "var(--tem-orange)", fontSize: 14, padding: "11px 18px" }}>
-              Grabada ✓
-            </button>
-          )}
+          {onDone && <button className="tem-btn tem-btn--naranja" onClick={onDone}>Grabada</button>}
         </div>
       )}
     </div>

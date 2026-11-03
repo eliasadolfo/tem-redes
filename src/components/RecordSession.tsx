@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { useStore } from "../store";
-import { PLATFORM_LABEL } from "../lib/platforms";
+import { pieceTitle, platformsStr } from "../lib/platforms";
 import Teleprompter from "./Teleprompter";
-import { BTN_PRIMARY, BTN_SECONDARY, INPUT, Label } from "./stages/ui";
-import { EDIT_MODES, durationLabel, guideFor } from "../lib/formatos";
+import { EDIT_MODES, durationLabel, guideFor, pieceFormat } from "../lib/formatos";
 import { deliveryStatus } from "../lib/stages";
 import type { EditMode, Proposal } from "../types";
 
 /**
  * Sesión de grabación: las piezas en Grabar, en lote (H07). Cada una abre el
- * teleprompter; "Grabada ✓" pide el link del bruto y la pasa a Editar.
- * Mismo componente en escritorio y móvil.
+ * teleprompter; "Grabada" pide el link del bruto y la pasa a Editar.
+ * El mismo componente en escritorio y teléfono.
  */
 export default function RecordSession({ mobile = false }: { mobile?: boolean }) {
   const { proposals, loading, actions } = useStore();
@@ -42,89 +41,68 @@ export default function RecordSession({ mobile = false }: { mobile?: boolean }) 
     ? { ...toFinish, raw_url: rawUrl.trim() || undefined, edit_mode: mode ?? undefined, shots: (toFinish.shots ?? []).map((s) => ({ ...s, done: true })) }
     : null;
   const pending = preview ? deliveryStatus(preview).filter((d) => !d.done) : [];
-  const toFinishGuide = toFinish ? guideFor(toFinish.script?.format) : null;
-
-  const pad = mobile ? "6px 18px 0" : "32px 40px";
+  const toFinishGuide = toFinish ? guideFor(pieceFormat(toFinish)) : null;
 
   return (
-    <div style={{ padding: pad, maxWidth: mobile ? undefined : 820 }}>
-      <div className="eyebrow">Etapa 3 de 6</div>
-      <h1 style={{ margin: "6px 0 4px", fontWeight: 600, fontSize: mobile ? 24 : 30, letterSpacing: "-.02em" }}>
-        {items.length === 0 ? "Nada por grabar" : items.length === 1 ? "1 pieza por grabar" : `${items.length} piezas por grabar`}
-      </h1>
-      <div style={{ fontSize: 13, fontWeight: 400, color: "var(--tem-handle)", lineHeight: 1.45, marginBottom: 18 }}>
-        Grábalas en una sola sesión: abre el teleprompter, marca las tomas y toca “Grabada” al terminar.
+    <div className="pagina pagina--angosta">
+      <div className="cabecera">
+        <div className="cabecera__texto">
+          <h1 className="tem-h1">Grabar</h1>
+          <p className="tem-caption">
+            {items.length === 0 ? "Nada por grabar." : items.length === 1 ? "1 pieza por grabar." : `${items.length} piezas por grabar.`} Abre el teleprompter, marca las tomas y toca Grabada al terminar.
+          </p>
+        </div>
       </div>
 
       {loading ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-busy="true">
-          {[0, 1].map((i) => <div key={i} className="skeleton" style={{ height: 120, borderRadius: 20 }} />)}
+        <div className="pila" aria-busy="true">
+          {[0, 1].map((i) => <div key={i} className="skeleton" style={{ height: 150 }} />)}
         </div>
       ) : items.length === 0 ? (
-        <div style={{ background: "var(--tem-surface)", borderRadius: 20, padding: "36px 24px", boxShadow: "var(--sh-card)", textAlign: "center" }}>
-          <div style={{ fontSize: 17, fontWeight: 600 }}>Sin piezas en Grabar</div>
-          <div style={{ marginTop: 8, fontSize: 13, fontWeight: 400, color: "var(--tem-handle)", maxWidth: 380, marginInline: "auto", lineHeight: 1.5 }}>
-            Las piezas llegan aquí cuando el guion tiene gancho, desarrollo y al menos una toma. Termina un guion y pásalo a Grabar.
+        <div className="tem-card">
+          <div className="vacio">
+            <h2 className="tem-title">Sin piezas en Grabar</h2>
+            <p>Llegan aquí cuando el guion tiene gancho, desarrollo y al menos una toma.</p>
+            <button className="tem-btn tem-btn--secundario" onClick={() => (mobile ? actions.setTab("inicio") : actions.go("tablero"))}>Ir al inicio</button>
           </div>
-          <button className="press invert-hover" onClick={() => (mobile ? actions.setTab("inicio") : actions.go("tablero"))} style={{ ...BTN_SECONDARY, marginTop: 16 }}>
-            Ir al tablero
-          </button>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {items.map((p) => (
-            <SessionCard key={p.id} p={p} onOpen={() => setOpen(p.id)} onDone={() => startFinish(p)} />
-          ))}
+        <div className="pila" style={{ gap: 12 }}>
+          {items.map((p) => <SessionCard key={p.id} p={p} onOpen={() => setOpen(p.id)} onDone={() => startFinish(p)} />)}
         </div>
       )}
 
       {current && <Teleprompter p={current} onClose={() => setOpen(null)} onDone={() => startFinish(current)} />}
 
-      {/* Grabada ✓ → link del bruto → Editar */}
       {toFinish && (
-        <div role="dialog" aria-label="Pieza grabada" style={{ position: "fixed", inset: 0, zIndex: 110, background: "rgba(17,17,17,.45)", display: "grid", placeItems: "center", padding: 18 }} onClick={() => setFinishing(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 420, background: "var(--tem-surface)", borderRadius: 22, padding: 22, boxShadow: "var(--sh-elev)" }}>
-            <div className="eyebrow">Grabada</div>
-            <div style={{ marginTop: 6, fontSize: 18, fontWeight: 600, letterSpacing: "-.01em" }}>{toFinish.line.pre}{toFinish.line.key}{toFinish.line.post}</div>
-            <div style={{ marginTop: 14 }}>
-              <Label>Link del bruto</Label>
-              <input
-                autoFocus
-                value={rawUrl}
-                onChange={(e) => setRawUrl(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && confirmFinish()}
-                placeholder="https://drive.google.com/… (puedes pegarlo después)"
-                aria-label="Link del bruto"
-                className="tem-textarea"
-                style={INPUT}
-              />
-            </div>
-            {toFinishGuide?.isVideo && (
-              <div style={{ marginTop: 14 }}>
-                <Label>Modo de edición</Label>
-                <div style={{ display: "flex", gap: 6 }}>
-                  {EDIT_MODES.map((m) => {
-                    const on = mode === m.key;
-                    return (
-                      <button key={m.key} className="press-sm" onClick={() => setMode(on ? null : m.key)} aria-pressed={on} title={m.help} style={{
-                        all: "unset", cursor: "pointer", flex: 1, textAlign: "center", padding: "8px 6px", borderRadius: 10, fontSize: 12, fontWeight: 500, boxSizing: "border-box",
-                        border: `1.5px solid ${on ? "var(--tem-orange)" : "var(--tem-ink)"}`, background: on ? "var(--tem-orange)" : "transparent", color: on ? "#fff" : "var(--tem-ink)",
-                      }}>
-                        {m.key} · {m.name}
-                      </button>
-                    );
-                  })}
-                </div>
+        <div className="velo" onClick={() => setFinishing(null)}>
+          <div className="hoja hoja--chica" role="dialog" aria-modal="true" aria-labelledby="t-grabada" onClick={(e) => e.stopPropagation()}>
+            <div className="hoja__cuerpo">
+              <h2 className="tem-title" id="t-grabada">{pieceTitle(toFinish)}</h2>
+              <div className="tem-field">
+                <label className="tem-label" htmlFor="bruto">Link del bruto</label>
+                <input id="bruto" autoFocus className="tem-input" value={rawUrl} onChange={(e) => setRawUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && confirmFinish()} placeholder="https://drive.google.com/…" />
+                <span className="tem-help">Puedes pegarlo después.</span>
               </div>
-            )}
-            <div style={{ marginTop: 14, fontSize: 11, fontWeight: 400, lineHeight: 1.45, color: pending.length ? "var(--tem-orange)" : "var(--tem-handle)" }}>
-              {pending.length === 0
-                ? "Entrega completa: se marcan las tomas y la pieza pasa a Editar. Se puede deshacer."
-                : `Se guarda lo grabado, pero sigue en Grabar hasta completar la entrega: ${pending.map((d) => d.text.toLowerCase()).join(", ")}.`}
+              {toFinishGuide?.editMode && (
+                <div className="tem-field">
+                  <span className="tem-label">Modo de edición</span>
+                  <div className="opciones">
+                    {EDIT_MODES.map((m) => (
+                      <button key={m.key} className="opcion opcion--bloque" aria-pressed={mode === m.key} onClick={() => setMode(mode === m.key ? null : m.key)}>{m.key} · {m.name}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <p className="tem-help">
+                {pending.length === 0
+                  ? "Entrega completa: la pieza pasa a Editar. Se puede deshacer."
+                  : `Se guarda lo grabado y sigue en Grabar hasta completar: ${pending.map((d) => d.text.toLowerCase()).join(", ")}.`}
+              </p>
             </div>
-            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-              <button className="press" onClick={confirmFinish} style={{ ...BTN_PRIMARY, flex: 1 }}>{pending.length === 0 ? "Pasar a Editar" : "Guardar lo grabado"}</button>
-              <button className="press invert-hover" onClick={() => setFinishing(null)} style={BTN_SECONDARY}>Todavía no</button>
+            <div className="hoja__pie">
+              <button className="tem-btn tem-btn--primario" onClick={confirmFinish}>{pending.length === 0 ? "Pasar a Editar" : "Guardar lo grabado"}</button>
+              <button className="tem-btn tem-btn--secundario" onClick={() => setFinishing(null)}>Todavía no</button>
             </div>
           </div>
         </div>
@@ -137,37 +115,20 @@ function SessionCard({ p, onOpen, onDone }: { p: Proposal; onOpen: () => void; o
   const { actions } = useStore();
   const shots = p.shots ?? [];
   const done = shots.filter((s) => s.done).length;
-  const dur = p.script?.duration_s;
-  const g = guideFor(p.script?.format);
+  const g = guideFor(pieceFormat(p));
   const d = deliveryStatus(p);
   const ok = d.filter((x) => x.done).length;
+  const dur = p.script?.duration_s;
   return (
-    <div style={{ background: "var(--tem-surface)", borderRadius: 20, padding: 18, boxShadow: "var(--sh-card)", display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-        {p.platforms.map((t) => (
-          <span key={t} style={{ fontSize: 10, fontWeight: 500, padding: "3px 8px", borderRadius: 999, border: "1px solid var(--tem-border)" }}>{PLATFORM_LABEL[t]}</span>
-        ))}
-        <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 500, color: "var(--tem-handle)" }}>
-          {p.script?.format ?? p.type}{dur ? ` · ${dur < 120 ? `${dur} s` : `${Math.round(dur / 60)} min`}` : ""}
-        </span>
+    <article className="tem-card sesion">
+      <button className="sesion__titulo" onClick={() => actions.openWork(p.id)}>{pieceTitle(p)}</button>
+      <p className="tem-caption">{[p.script?.format || p.type, dur ? `${dur} s` : durationLabel(g), g.aspect, platformsStr(p.platforms)].filter(Boolean).join(" · ")}</p>
+      {p.script?.hook && <p className="tem-small preline">{p.script.hook}</p>}
+      <p className="tem-caption">{shots.length ? `${done} de ${shots.length} tomas` : "Sin tomas"} · entrega {ok} de {d.length}</p>
+      <div className="sesion__botones">
+        <button className="tem-btn tem-btn--secundario" onClick={onOpen}>Abrir teleprompter</button>
+        <button className="tem-btn tem-btn--primario" onClick={onDone}>Grabada</button>
       </div>
-      <button onClick={() => actions.openWork(p.id)} title="Abrir la ficha" style={{ all: "unset", cursor: "pointer", fontSize: 18, fontWeight: 600, lineHeight: 1.2, letterSpacing: "-.01em" }}>
-        {p.line.pre}{p.line.key}{p.line.post}
-      </button>
-      {p.script?.hook && (
-        <div style={{ fontSize: 13, fontWeight: 400, color: "var(--tem-handle)", lineHeight: 1.4 }}>{p.script.hook}</div>
-      )}
-      <div style={{ fontSize: 12, fontWeight: 400, color: "var(--tem-handle)", lineHeight: 1.4 }}>
-        {g.aspect}{g.duration ? ` · ${durationLabel(g)}` : ""} · {g.frame.split(".")[0]}.
-      </div>
-      <div style={{ fontSize: 12, fontWeight: 500, color: ok === d.length ? "var(--tem-orange)" : "var(--tem-handle)" }}>
-        {shots.length ? `${done} de ${shots.length} tomas grabadas` : "Sin lista de tomas"}
-        {` · entrega ${ok} de ${d.length}`}
-      </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button className="press invert-hover" onClick={onOpen} style={{ ...BTN_SECONDARY, flex: 1 }}>Abrir teleprompter</button>
-        <button className="press" onClick={onDone} style={{ ...BTN_PRIMARY, flex: 1, padding: "9px 14px", fontSize: 13 }}>Grabada ✓</button>
-      </div>
-    </div>
+    </article>
   );
 }

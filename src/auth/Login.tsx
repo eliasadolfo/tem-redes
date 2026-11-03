@@ -1,8 +1,7 @@
 import { useState, type FormEvent } from "react";
-import logoBlack from "../assets/img/logo-tem-black.png";
 import { supabase } from "../lib/supabase";
 
-/** Pantalla de acceso — un solo usuario (Elías). Email + contraseña. */
+/** Pantalla de acceso: un solo usuario (Elías), correo y contraseña. */
 export default function Login() {
   const [email, setEmail] = useState("elias@tuescuelademarcas.cl");
   const [password, setPassword] = useState("");
@@ -15,7 +14,7 @@ export default function Login() {
     setBusy(true);
     setError(null);
     const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    // H09 — qué pasó y cómo seguir, sin códigos
+    // H09: qué pasó y cómo seguir, sin códigos
     if (err) {
       setError(
         /network|fetch/i.test(err.message)
@@ -26,72 +25,23 @@ export default function Login() {
     setBusy(false);
   };
 
-  const input: React.CSSProperties = {
-    width: "100%", boxSizing: "border-box", fontFamily: "var(--font-ui)", fontSize: 15, fontWeight: 400,
-    color: "var(--tem-ink)", background: "var(--tem-bg)", border: "1px solid transparent", borderRadius: 12,
-    padding: "13px 14px", outline: "none",
-  };
-
   return (
-    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "var(--tem-bg)", padding: 18 }}>
-      <form
-        onSubmit={submit}
-        style={{
-          width: "100%", maxWidth: 380, background: "var(--tem-surface)", borderRadius: 24, padding: 32,
-          boxShadow: "var(--sh-elev)", display: "flex", flexDirection: "column", gap: 14,
-          animation: "sheetUp .3s var(--ease-spring)",
-        }}
-      >
-        <img src={logoBlack} alt="TEM" style={{ height: 28, width: "auto", objectFit: "contain", alignSelf: "flex-start" }} />
-        <div className="eyebrow" style={{ marginTop: 10 }}>Acceso</div>
-        <h1 style={{ margin: "0 0 6px", fontWeight: 600, fontSize: 26, letterSpacing: "-.02em", lineHeight: 1.1 }}>
-          Entra a tu plataforma
-        </h1>
-
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".01em", color: "var(--tem-handle)" }}>CORREO</span>
-          <input
-            className="tem-textarea"
-            type="email"
-            autoComplete="username"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={input}
-            required
-          />
-        </label>
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".01em", color: "var(--tem-handle)" }}>CONTRASEÑA</span>
-          <input
-            className="tem-textarea"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={input}
-            required
-            autoFocus
-          />
-        </label>
-
-        {error && (
-          <div style={{ fontSize: 13, fontWeight: 500, color: "var(--tem-orange)" }}>{error}</div>
-        )}
-
-        <button
-          type="submit"
-          className="press"
-          disabled={busy}
-          style={{
-            all: "unset", cursor: "pointer", boxSizing: "border-box", marginTop: 6, textAlign: "center", fontSize: 15,
-            fontWeight: 500, background: "var(--tem-ink)", color: "#fff", padding: 13, borderRadius: 999,
-          }}
-        >
+    <div className="pantalla-centro">
+      <form className="tem-card acceso" onSubmit={submit}>
+        <span className="tem-bar__producto">Studio<span className="tem-dot">·</span>TEM</span>
+        <h1 className="tem-h1">Entra a tu plataforma</h1>
+        <div className="tem-field">
+          <label className="tem-label" htmlFor="correo">Correo</label>
+          <input id="correo" className="tem-input" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        </div>
+        <div className="tem-field">
+          <label className="tem-label" htmlFor="clave">Contraseña</label>
+          <input id="clave" className="tem-input" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required autoFocus />
+        </div>
+        {error && <div className="tem-aviso tem-aviso--error" role="alert">{error}</div>}
+        <button type="submit" className="tem-btn tem-btn--primario tem-btn--lg" disabled={busy}>
           {busy ? "Entrando…" : "Entrar"}
         </button>
-        <div style={{ fontSize: 12, fontWeight: 400, color: "var(--tem-handle)", textAlign: "center" }}>
-          Plataforma privada de Tu Escuela de Marcas. ¡Hagamos que pase!
-        </div>
       </form>
     </div>
   );

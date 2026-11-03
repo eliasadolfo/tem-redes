@@ -1,61 +1,51 @@
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useStore } from "../store";
 import { DAY, DAY_NAMES_FULL, noon, weekRangeLabel } from "../lib/dates";
+import LoteSheet from "../components/LoteSheet";
 import PieceCard from "../components/PieceCard";
 
-/** Semana móvil: solo lo programado (Listo) y lo publicado. */
+/** Semana en el teléfono: lo que está en Listo o Publicado. */
 export default function MobileWeek() {
   const s = useStore();
   const { actions } = s;
+  const [lote, setLote] = useState(false);
   const monday = noon(s.calWeekStart);
   const visible = s.proposals.filter((p) => p.status !== "rejected" && (p.stage === "listo" || p.stage === "publicado"));
 
-  const arrow: React.CSSProperties = {
-    all: "unset", cursor: "pointer", width: 38, height: 38, flex: "none", borderRadius: 12,
-    display: "grid", placeItems: "center", background: "var(--tem-surface)", border: "1px solid var(--tem-border)",
-  };
-
   return (
-    <div style={{ padding: "6px 18px 0" }}>
-      <div className="eyebrow">Tu semana</div>
-      <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
-        <button className="press-sm" style={arrow} onClick={() => actions.calWeekNav(-1)} aria-label="Semana anterior">
-          <span style={{ width: 0, height: 0, borderRight: "8px solid var(--tem-ink)", borderTop: "6px solid transparent", borderBottom: "6px solid transparent" }} />
-        </button>
-        <div style={{ flex: 1, textAlign: "center", fontWeight: 600, fontSize: 17, letterSpacing: "-.01em" }}>
-          {weekRangeLabel(monday)}
+    <div className="pagina">
+      <div className="cabecera">
+        <div className="cabecera__texto">
+          <h1 className="tem-h1">Semana</h1>
+          <p className="tem-caption">Lo que está en Listo o Publicado.</p>
         </div>
-        <button className="press-sm" style={arrow} onClick={() => actions.calWeekNav(1)} aria-label="Semana siguiente">
-          <span style={{ width: 0, height: 0, borderLeft: "8px solid var(--tem-ink)", borderTop: "6px solid transparent", borderBottom: "6px solid transparent" }} />
-        </button>
       </div>
-      <div style={{ marginTop: 6, fontSize: 12, fontWeight: 400, color: "var(--tem-handle)" }}>
-        Solo lo que está en Listo o Publicado.
+      <div className="nav-semana seccion">
+        <button className="icono-btn" onClick={() => actions.calWeekNav(-1)} aria-label="Semana anterior"><ChevronLeft size={18} strokeWidth={1.5} /></button>
+        <span className="nav-semana__rango">{weekRangeLabel(monday)}</span>
+        <button className="icono-btn" onClick={() => actions.calWeekNav(1)} aria-label="Semana siguiente"><ChevronRight size={18} strokeWidth={1.5} /></button>
       </div>
+      <button className="tem-btn tem-btn--secundario btn-ancho seccion" onClick={() => setLote(true)}>Programar en lote</button>
 
-      <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 18 }}>
+      <div className="semana" style={{ marginTop: 8 }}>
         {DAY_NAMES_FULL.map((name, i) => {
-          const d = new Date(monday + i * DAY);
           const items = visible.filter((p) => p.day === i);
           return (
-            <div key={i}>
-              <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)", marginBottom: 8 }}>
-                {name} {d.getDate()}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                {s.loading ? (
-                  <div className="skeleton" style={{ height: 70 }} aria-busy="true" />
-                ) : items.length === 0 ? (
-                  <div style={{ border: "1.5px dashed var(--tem-border-empty)", borderRadius: 16, padding: 14, fontWeight: 400, fontSize: 12, color: "#B8B8B8" }}>
-                    Día libre · pasa una pieza a Listo para verla aquí
-                  </div>
-                ) : (
-                  items.map((p) => <PieceCard key={p.id} p={p} showStage />)
-                )}
-              </div>
+            <div key={name} className="dia">
+              <div className="dia__nombre">{name} {new Date(monday + i * DAY).getDate()}</div>
+              {s.loading ? (
+                <div className="skeleton" style={{ height: 70 }} aria-busy="true" />
+              ) : items.length === 0 ? (
+                <p className="tem-caption dia__vacio">Libre</p>
+              ) : (
+                items.map((p) => <PieceCard key={p.id} p={p} />)
+              )}
             </div>
           );
         })}
       </div>
+      {lote && <LoteSheet onClose={() => setLote(false)} />}
     </div>
   );
 }

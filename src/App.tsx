@@ -14,56 +14,37 @@ function Shell() {
   return (
     <>
       {isMobile ? <MobileApp /> : <DesktopApp />}
-      <Toast message={toast} bottom={isMobile ? 104 : 32} onUndo={undo ? actions.undoLast : null} />
+      <Toast message={toast} bottom={isMobile ? 84 : 24} onUndo={undo ? actions.undoLast : null} />
     </>
   );
 }
 
-/** H01 — pantalla de carga: el usuario sabe que la app está arrancando. */
-function Booting({ label = "Abriendo tu plataforma…" }: { label?: string }) {
+/** H01: la app dice que está arrancando. */
+function Booting() {
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      style={{
-        minHeight: "100vh", display: "grid", placeItems: "center", background: "var(--tem-bg)",
-        color: "var(--tem-handle)", fontSize: 14, fontWeight: 400,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+    <div className="pantalla-centro tem-muted tem-small" role="status" aria-live="polite">
+      <div className="fila">
         <span className="spinner" aria-hidden="true" />
-        {label}
+        Abriendo tu plataforma…
       </div>
     </div>
   );
 }
 
-/**
- * Puerta de acceso: con Supabase configurado exige sesión (login);
- * sin Supabase (modo mock) entra directo.
- */
-/** H09 — sin conexión: qué pasó y cómo seguir, con un botón para reintentar. */
+/** H09: sin conexión. Qué pasó y cómo seguir, con un botón para reintentar. */
 function Offline({ onRetry }: { onRetry: () => void }) {
   return (
-    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "var(--tem-bg)", padding: 18 }}>
-      <div style={{ maxWidth: 380, background: "var(--tem-surface)", borderRadius: 24, padding: 28, boxShadow: "var(--sh-elev)", textAlign: "center" }}>
-        <div className="eyebrow">Sin conexión</div>
-        <div style={{ marginTop: 10, fontWeight: 600, fontSize: 20, letterSpacing: "-.02em" }}>No pude conectar con tu plataforma</div>
-        <div style={{ marginTop: 8, fontSize: 13, fontWeight: 400, color: "var(--tem-handle)", lineHeight: 1.5 }}>
-          Revisa tu internet y vuelve a intentar. Tus propuestas están guardadas; no se perdió nada.
-        </div>
-        <button
-          className="press"
-          onClick={onRetry}
-          style={{ all: "unset", cursor: "pointer", marginTop: 18, fontSize: 14, fontWeight: 500, background: "var(--tem-ink)", color: "#fff", padding: "11px 18px", borderRadius: 999 }}
-        >
-          Reintentar
-        </button>
+    <div className="pantalla-centro">
+      <div className="tem-card pila" style={{ maxWidth: 400 }}>
+        <h1 className="tem-title">No pude conectar con tu plataforma</h1>
+        <p className="tem-small tem-muted">Revisa tu internet y vuelve a intentar. Tus piezas están guardadas; no se perdió nada.</p>
+        <button className="tem-btn tem-btn--primario" onClick={onRetry}>Reintentar</button>
       </div>
     </div>
   );
 }
 
+/** Con Supabase configurado exige sesión; sin Supabase corre en modo demostración. */
 function AuthGate() {
   // undefined = todavía no sabemos; null = sin sesión
   const [session, setSession] = useState<Session | null | undefined>(hasSupabase ? undefined : null);
@@ -73,7 +54,7 @@ function AuthGate() {
   useEffect(() => {
     if (!supabase) return;
     setOffline(false);
-    // H01 — si en 8 s no hay respuesta, dejamos de "cargar" y decimos qué pasa.
+    // H01: si en 8 s no hay respuesta, dejamos de "cargar" y decimos qué pasa.
     const timer = setTimeout(() => setSession((s) => (s === undefined ? (setOffline(true), undefined) : s)), 8000);
     supabase.auth
       .getSession()
