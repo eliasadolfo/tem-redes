@@ -48,8 +48,8 @@ import {
 } from "./lib/ai";
 import { hasSupabase } from "./lib/supabase";
 import { toMetricRow, type MetricRow } from "./lib/metrics";
-import { TAG_TO_NETWORK, fetchConnectionStatus, hasPublishing, publishPiece as publishViaRobot, startConnect } from "./lib/publish";
-import { STAGE_LABEL, missingFor, newItem, statusForStage } from "./lib/stages";
+import { NETWORK_KEY, TAG_TO_NETWORK, fetchConnectionStatus, hasPublishing, publishPiece as publishViaRobot, startConnect } from "./lib/publish";
+import { STAGE_LABEL, missingFor, newItem, scheduleFields, statusForStage } from "./lib/stages";
 
 /** H09 — el error dice qué pasó y cómo seguir, sin códigos técnicos. */
 function aiErrorText(e: unknown): string {
@@ -101,6 +101,13 @@ interface State {
 
 export type AiTask = "guion" | "tomas" | "cortes" | "caption" | "aprendizaje";
 
+/** Resultado de programar una pieza en una red. */
+export interface NetResult {
+  network: Network;
+  ok: boolean;
+  detail: string;
+}
+
 const initialState: State = {
   view: "tablero",
   tab: "inicio",
@@ -148,8 +155,11 @@ interface Actions {
   setVariant: (v: 0 | 1 | 2) => void;
   /** Enciende o apaga una red en una pieza (se guarda al tiro). */
   togglePlatform: (id: string, tag: PlatformTag) => void;
-  /** Lote: asigna redes, día y hora a varias piezas a la vez (con Deshacer). */
-  applyBatch: (ids: string[], change: { platforms?: PlatformTag[]; day?: number; time?: string }) => void;
+  /**
+   * Lote: programa una pieza en el robot y guarda redes y fecha si alguna red respondió
+   * bien. Nunca lanza error: una falla vuelve como resultado y no frena a las demás.
+   */
+  schedulePiece: (id: string, plan: { networks: Network[]; platforms: PlatformTag[]; when: string }) => Promise<NetResult[]>;
   sendChat: (text: string) => void;
   /** Agrega un mensaje del asistente al chat del copiloto (p.ej. tras un encargo de IA). */
   say: (text: string) => void;
@@ -200,8 +210,6 @@ interface Actions {
   /** Crea una idea nueva a partir del aprendizaje de una pieza publicada. */
   ideaFromLearning: (id: string) => void;
   updateCaption: (id: string, caption: string) => void;
-  /** Cambia día (0-4) y/o hora ("HH:MM" o "") de una pieza. */
-  updateSchedule: (id: string, s: { day?: number; time?: string }) => void;
   /** Revierte la última acción (si el toast con "Deshacer" sigue visible). */
   undoLast: () => void;
 }
@@ -437,13 +445,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const platforms = p.platforms.includes(tag) ? p.platforms.filter((t) => t !== tag) : [...p.platforms, tag];
         applyFields(id, { platforms });
       },
-      applyBatch: (ids, change) => {
-        const pieces = sRef.current.proposals.filter((p) => ids.includes(p.id));
-        const before = pieces.map((p) => ({ id: p.id, platforms: p.platforms, day: p.day, time: p.time }));
-        pieces.forEach((p) => applyFields(p.id, change));
-        flash(pieces.length === 1 ? "1 pieza actualizada" : `${pieces.length} piezas actualizadas`, () => {
-          before.forEach(({ id, ...old }) => applyFields(id, old));
-        });
+      schedulePiece: async (id, plan) => {
+        patch({ publishing: id });
+        try {
+          const r = await publishViaRobot(id, plan.networks, plan.when);
+          const results: NetResult[] = plan.networks.map((network) => {
+            const v = r.posts?.[NETWORK_KEY[network]];
+            if (!v) return { network, ok: false, detail: "Sin respuesta para esta red" };
+            if (!v.ok) return { network, ok: false, detail: v.error ?? "Falló" };
+            return { network, ok: true, detail: v.pending ? "Subiendo" : "Programada" };
+          });
+          if (results.some((x) => x.ok)) {
+            const current = sRef.current.proposals.find((x) => x.id === id);
+            applyFields(id, { posts: { ...current?.posts, ...r.posts }, platforms: plan.platforms, ...scheduleFields(plan.when) });
+          }
+          return results;
+        } catch (e) {
+          const detail = (e as Error).message || "No se pudo enviar";
+          return plan.networks.map((network) => ({ network, ok: false, detail }));
+        } finally {
+          patch({ publishing: null });
+        }
       },
       // Copiloto: Claude aplica la instrucción sobre la pieza abierta
       sendChat: (text) => {
@@ -472,12 +494,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             patch({ chatBusy: false });
           }
         })();
-      },
-      updateSchedule: (id, sch) => {
-        patch((prev) => ({
-          proposals: prev.proposals.map((p) => (p.id === id ? { ...p, ...sch } : p)),
-        }));
-        void updateProposalFields(id, sch);
       },
       // Caption editado a mano (se guarda)
       updateCaption: (id, caption) => {
@@ -563,8 +579,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const r = await publishViaRobot(id, nets, when, opts);
           const before: ProposalFields = { posts: p.posts ?? null, stage: p.stage, status: p.status, published_at: p.published_at ?? null };
           const fields: ProposalFields = { posts: r.posts };
+          if (when && r.scheduled) Object.assign(fields, scheduleFields(when));
           if (r.published) { fields.stage = "publicado"; fields.status = statusForStage("publicado"); fields.published_at = new Date().toISOString(); }
-          // El robot ya escribió en la base; aquí solo reflejamos en pantalla.
+          // El robot ya escribió `posts` en la base; la fecha la guarda la app.
+          if (when && r.scheduled) void updateProposalFields(id, scheduleFields(when));
           patch((prev) => ({ proposals: prev.proposals.map((x) => (x.id === id ? { ...x, ...(Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v ?? undefined])) as Partial<Proposal>) } : x)) }));
           const fails = Object.entries(r.posts).filter(([, v]) => !v.ok);
           if (fails.length) {

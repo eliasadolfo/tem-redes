@@ -86,6 +86,12 @@ Memoria de errores y decisiones no obvias, para que quien siga no vuelva a caer.
 - **Sin datos de ejemplo con Supabase configurado.** Si fallan las piezas, se avisa con
   Reintentar. `data/mock.ts` solo corre sin `.env`.
 
+- **`scheduled_at` puede faltar en la base.** Enviar una columna inexistente hace fallar toda la
+  escritura, por eso `db.ts` la detecta al leer y la omite. `day` tiene un check de 0 a 4: una fecha
+  de fin de semana no lo escribe.
+- **El lote no repite redes.** Salta las que ya tienen `posts[red].ok`; así repetir tras una falla
+  parcial no duplica publicaciones.
+
 ## Entorno
 
 - **El sandbox no deja abrir puertos**: `vite` falla con `EPERM`. Hay que levantarlo fuera del

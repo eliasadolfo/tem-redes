@@ -1,7 +1,8 @@
 // Paneles por etapa de la ficha de la pieza. Los mismos en escritorio y teléfono.
 import { useState } from "react";
 import { useStore, type AiTask } from "../../store";
-import { DAY_NAMES_FULL } from "../../lib/dates";
+import { fmtWhen, fromInputs, toInputs } from "../../lib/dates";
+import { hasScheduledColumn } from "../../lib/db";
 import { PLATFORM_LABEL, PUBLISH_TAGS, pieceTitle } from "../../lib/platforms";
 import {
   DURATIONS_S,
@@ -11,6 +12,8 @@ import {
   deliveryStatus,
   newItem,
   parseLine,
+  pieceWhen,
+  scheduleFields,
 } from "../../lib/stages";
 import { EDIT_MODES, checklistFor, deliveryFor, guideFor, pieceFormat, suggestedFileName } from "../../lib/formatos";
 import FormatGuide from "../FormatGuide";
@@ -262,22 +265,32 @@ export function ListoPanel({ p }: { p: Proposal }) {
   const extra = p.platforms.filter((t) => !PUBLISH_TAGS.includes(t));
   const tags: PlatformTag[] = [...PUBLISH_TAGS, ...extra];
   const names = p.platforms.map((t) => PLATFORM_LABEL[t]).join(", ");
+  const saved = toInputs(p.scheduled_at);
+  const [date, setDate] = useState(saved.date);
+  const [time, setTime] = useState(saved.time || p.time);
+  const setWhen = (d: string, t: string) => {
+    setDate(d);
+    setTime(t);
+    const iso = fromInputs(d, t);
+    if (iso) actions.updateFields(p.id, scheduleFields(iso));
+    else if (!d) actions.updateFields(p.id, { scheduled_at: null });
+  };
+  const when = pieceWhen(p);
   return (
     <div className="panel">
       <div className="dos">
-        <Field label="Día">
-          <select className="tem-select" value={p.day} onChange={(e) => actions.updateSchedule(p.id, { day: Number(e.target.value) })} aria-label="Día de publicación">
-            {DAY_NAMES_FULL.map((d, i) => <option key={d} value={i}>{d}</option>)}
-          </select>
+        <Field label="Fecha">
+          <input className="tem-input" type="date" value={date} onChange={(e) => setWhen(e.target.value, time)} aria-label="Fecha de publicación" />
         </Field>
         <Field label="Hora">
-          <input className="tem-input" type="time" value={p.time} onChange={(e) => actions.updateSchedule(p.id, { time: e.target.value })} aria-label="Hora de publicación" />
+          <input className="tem-input" type="time" value={time} onChange={(e) => setWhen(date, e.target.value)} aria-label="Hora de publicación" />
         </Field>
       </div>
+      {!hasScheduledColumn() && <p className="tem-help">Esta fecha se pierde al recargar hasta activar la columna de fecha. Programar en lote no se ve afectado.</p>}
       <Field
         label="Publicar en"
         warn={p.platforms.length === 0}
-        help={p.platforms.length === 0 ? "Elige al menos una red." : `Sale el ${DAY_NAMES_FULL[p.day].toLowerCase()}${p.time ? ` a las ${p.time}` : ""} en ${names}.`}
+        help={p.platforms.length === 0 ? "Elige al menos una red." : `${when ? `Sale el ${fmtWhen(when)}` : "Sin fecha"} en ${names}.`}
       >
         <div className="opciones" role="group" aria-label="Redes">
           {tags.map((t) => (
@@ -291,20 +304,6 @@ export function ListoPanel({ p }: { p: Proposal }) {
   );
 }
 
-/** Próxima fecha (ISO) del día y hora de la pieza, siempre en el futuro. */
-function nextSlot(day: number, time: string): string | null {
-  if (!time) return null;
-  const [hh, mm] = time.split(":").map(Number);
-  const d = new Date();
-  d.setSeconds(0, 0);
-  d.setHours(hh, mm, 0, 0);
-  const want = (day + 1) % 7; // 0=lun → getDay 1
-  let delta = (want - d.getDay() + 7) % 7;
-  if (delta === 0 && d.getTime() <= Date.now() + 60_000) delta = 7;
-  d.setDate(d.getDate() + delta);
-  return d.toISOString();
-}
-
 /** Publicar ahora o programar en las redes elegidas. */
 function PublishBlock({ p }: { p: Proposal }) {
   const s = useStore();
@@ -313,7 +312,7 @@ function PublishBlock({ p }: { p: Proposal }) {
   const nets = [...new Set(p.platforms.map((t) => TAG_TO_NETWORK[t]).filter((n): n is Network => Boolean(n)))];
   const notConnected = nets.filter((n) => !s.connections[n]);
   const busy = s.publishing === p.id;
-  const slot = nextSlot(p.day, p.time);
+  const slot = p.scheduled_at && new Date(p.scheduled_at).getTime() > Date.now() + 60_000 ? p.scheduled_at : null;
   const missing = !p.final_url ? "Falta el link del video final, en Editar." : nets.length === 0 ? "Elige al menos una red." : notConnected.length ? `Conecta ${notConnected.join(", ")} en Perfil.` : null;
   const canTrial = nets.includes("Instagram") && guideFor(pieceFormat(p)).key === "reel";
   const opts = canTrial && trial ? { trial: true } : undefined;
@@ -330,7 +329,7 @@ function PublishBlock({ p }: { p: Proposal }) {
         </button>
         {slot && (
           <button className="tem-btn tem-btn--secundario" onClick={() => void actions.publishPiece(p.id, slot, opts)} disabled={Boolean(missing) || busy}>
-            Programar: {DAY_NAMES_FULL[p.day]} {p.time}
+            Programar: {fmtWhen(slot)}
           </button>
         )}
       </div>

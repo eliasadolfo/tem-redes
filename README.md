@@ -108,9 +108,24 @@ inventa ni estima nada. Lo descartado (`status = rejected`) no aparece.
 
 ### Programar en lote
 
-En Tablero, Calendario y Semana, **Programar en lote** deja elegir varias piezas en Listo y
-asignarles redes, día y hora a la vez, con Deshacer. Solo guarda esos campos: la subida a las
-redes se hace desde la ficha de cada pieza, con Publicar o Programar.
+En Tablero, Calendario y Semana, **Programar en lote** elige piezas en Listo, redes, primera
+fecha, hora y cómo repartirlas. Antes de enviar muestra una confirmación con cada pieza, sus
+redes y su fecha: **ese botón es el GO de Elías** y nada sale antes. Luego llama a `publicar`
+pieza por pieza con `when` en ISO, muestra el resultado por pieza y por red, y si una falla
+sigue con las demás. Lo que falló queda en Listo; al repetir solo se envían las redes
+pendientes, para no duplicar.
+
+### Fecha de cada pieza
+
+La fecha completa vive en `tem_proposals.scheduled_at`. `day` y `time` quedan por compatibilidad
+(`day` solo admite lunes a viernes). El calendario ubica cada pieza con `pieceWhen(p)`:
+`published_at` si salió, si no `scheduled_at`, si no `posts[red].scheduled_date`. Sin fecha va a
+un bloque aparte y no se repite. La app detecta si la columna existe; para crearla:
+
+```sql
+alter table public.tem_proposals add column if not exists scheduled_at timestamptz;
+notify pgrst, 'reload schema';
+```
 
 ### Video pesado
 
@@ -237,7 +252,6 @@ pantalla; navegación activa en tinta. Modo oscuro según el sistema; las piezas
 ## Pendiente (próximas fases)
 
 - Motor de edición (ffmpeg, estilo TEM) en el VPS, disparado desde la app con el bruto y las instrucciones.
-- Programar en lote hacia las redes: hoy el lote asigna redes, día y hora; la subida va pieza por pieza.
 - Persistir el historial del chat del copiloto.
 - Newsletter: la pantalla simulada se quitó; volverá cuando lea `tem_newsletter_drafts` y envíe de verdad.
 - Exportar video (hoy solo imagen PNG).

@@ -111,7 +111,8 @@ a { color: inherit; }
 .sesion__botones .tem-btn { flex: 1; }
 
 /* --- Calendario --------------------------------------------------------------------------- */
-.semana { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--tem-s-3); }
+.semana { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--tem-s-2); }
+.sin-fecha { display: flex; flex-direction: column; gap: var(--tem-s-2); margin-bottom: var(--tem-s-5); }
 .dia { display: flex; flex-direction: column; gap: var(--tem-s-2); min-width: 0; }
 .dia__nombre { font-size: var(--tem-ui-small); font-weight: 500; color: var(--tem-ink-2); padding: 0 var(--tem-s-1); }
 .dia__nombre--hoy { color: var(--tem-ink); }
@@ -222,6 +223,8 @@ a { color: inherit; }
 @keyframes aparecer { from { opacity: 0; transform: translateY(8px); } }
 .lote-lista { display: flex; flex-direction: column; max-height: 260px; overflow-y: auto; border-top: 1px solid var(--tem-line); }
 .lote-fila { display: flex; align-items: flex-start; gap: var(--tem-s-3); padding: var(--tem-s-2) 0; border-bottom: 1px solid var(--tem-line); cursor: pointer; }
+.lote-res { display: flex; flex-wrap: wrap; gap: var(--tem-s-1); margin-top: var(--tem-s-1); }
+.lote-plan { display: flex; flex-direction: column; gap: 2px; padding: var(--tem-s-2) 0; border-bottom: 1px solid var(--tem-line); }
 .lote-fila input { flex: none; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--tem-ink); }
 
 /* --- Teleprompter: siempre oscuro, no sigue el tema ---------------------------------------------------- */
