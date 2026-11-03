@@ -22,6 +22,7 @@ interface ProposalRow {
   id: string;
   day: number;
   time: string;
+  scheduled_at?: string | null;
   platforms: string[];
   type: string;
   format: string | null;
@@ -52,11 +53,19 @@ interface ProposalRow {
   posts: Record<string, PostResult> | null;
 }
 
+/**
+ * `tem_proposals.scheduled_at` puede no existir todavía: se detecta al leer. Sin la
+ * columna no se envía, porque Supabase rechazaría toda la escritura.
+ */
+let scheduledColumn = false;
+export const hasScheduledColumn = () => scheduledColumn;
+
 function rowToProposal(r: ProposalRow): Proposal {
   return {
     id: r.id,
     day: r.day,
     time: r.time,
+    scheduled_at: r.scheduled_at ?? undefined,
     platforms: r.platforms as PlatformTag[],
     type: r.type,
     format: (r.format as Proposal["format"]) ?? undefined,
@@ -90,6 +99,7 @@ export function proposalToRow(p: Proposal): ProposalRow {
     id: p.id,
     day: p.day,
     time: p.time,
+    ...(scheduledColumn ? { scheduled_at: p.scheduled_at ?? null } : {}),
     platforms: p.platforms,
     type: p.type,
     format: p.format ?? null,
@@ -135,6 +145,7 @@ export async function fetchProposals(): Promise<Proposal[] | null> {
     console.error("fetchProposals:", error.message);
     return null;
   }
+  if (data.length > 0) scheduledColumn = "scheduled_at" in data[0];
   return (data as ProposalRow[]).map(rowToProposal);
 }
 
@@ -172,7 +183,7 @@ export async function updateProposalStatus(id: string, status: ProposalStatus): 
 }
 
 type EditableKey =
-  | "eyebrow" | "line" | "caption" | "tags" | "day" | "time" | "status" | "stage" | "source" | "script"
+  | "eyebrow" | "line" | "caption" | "tags" | "day" | "time" | "scheduled_at" | "status" | "stage" | "source" | "script"
   | "shots" | "checklist" | "raw_url" | "edit_mode" | "delivery" | "final_url" | "thumbnail_url" | "notes" | "recorded_at"
   | "published_at" | "results" | "platforms" | "posts";
 
@@ -184,7 +195,7 @@ export type ProposalFields = { [K in EditableKey]?: Proposal[K] | null };
 
 /** Columnas que se copian tal cual (undefined = no tocar; el resto se guarda, null incluido). */
 const PLAIN_COLUMNS = [
-  "eyebrow", "caption", "tags", "day", "time", "status", "stage", "source", "script", "shots",
+  "eyebrow", "caption", "tags", "day", "time", "scheduled_at", "status", "stage", "source", "script", "shots",
   "checklist", "raw_url", "edit_mode", "delivery", "final_url", "thumbnail_url", "notes", "recorded_at", "published_at",
   "results", "platforms", "posts",
 ] as const;
@@ -197,6 +208,7 @@ export async function updateProposalFields(id: string, fields: ProposalFields): 
     const v = fields[k];
     if (v !== undefined) row[k] = v;
   }
+  if (!scheduledColumn) delete row.scheduled_at;
   if (fields.line) {
     row.line_pre = fields.line.pre;
     row.line_key = fields.line.key;

@@ -5,7 +5,8 @@ import { DAY, WK_ABBR, mondayOf, noon, weekRangeLabel } from "../lib/dates";
 import { PLATFORM_LABEL, PUBLISH_TAGS } from "../lib/platforms";
 import LoteSheet from "../components/LoteSheet";
 import PieceCard from "../components/PieceCard";
-import type { PlatformTag } from "../types";
+import { pieceWhen } from "../lib/stages";
+import type { PlatformTag, Proposal } from "../types";
 
 const FILTERS: (PlatformTag | "Todas")[] = ["Todas", ...PUBLISH_TAGS];
 
@@ -25,6 +26,12 @@ export default function Calendar() {
       (p.stage === "listo" || p.stage === "publicado") &&
       (platFilter === "Todas" || p.platforms.includes(platFilter)),
   );
+
+  const dayOf = (p: Proposal) => {
+    const when = pieceWhen(p);
+    return when ? noon(new Date(when).getTime()) : null;
+  };
+  const undated = visible.filter((p) => dayOf(p) === null);
 
   return (
     <div className="pagina">
@@ -52,10 +59,17 @@ export default function Calendar() {
         </div>
       </div>
 
+      {undated.length > 0 && (
+        <section className="sin-fecha" aria-label="Sin fecha">
+          <div className="dia__nombre">Sin fecha</div>
+          <div className="rejilla-piezas">{undated.map((p) => <PieceCard key={p.id} p={p} />)}</div>
+        </section>
+      )}
+
       <div className="semana">
         {WK_ABBR.map((wk, i) => {
           const ms = monday + i * DAY;
-          const items = visible.filter((p) => p.day === i);
+          const items = visible.filter((p) => dayOf(p) === noon(ms));
           return (
             <div key={wk} className="dia">
               <div className={`dia__nombre${noon(ms) === today ? " dia__nombre--hoy" : ""}`}>{wk} {new Date(ms).getDate()}</div>

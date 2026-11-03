@@ -4,6 +4,8 @@ import { useStore } from "../store";
 import { DAY, DAY_NAMES_FULL, noon, weekRangeLabel } from "../lib/dates";
 import LoteSheet from "../components/LoteSheet";
 import PieceCard from "../components/PieceCard";
+import { pieceWhen } from "../lib/stages";
+import type { Proposal } from "../types";
 
 /** Semana en el teléfono: lo que está en Listo o Publicado. */
 export default function MobileWeek() {
@@ -12,6 +14,12 @@ export default function MobileWeek() {
   const [lote, setLote] = useState(false);
   const monday = noon(s.calWeekStart);
   const visible = s.proposals.filter((p) => p.status !== "rejected" && (p.stage === "listo" || p.stage === "publicado"));
+
+  const dayOf = (p: Proposal) => {
+    const when = pieceWhen(p);
+    return when ? noon(new Date(when).getTime()) : null;
+  };
+  const undated = visible.filter((p) => dayOf(p) === null);
 
   return (
     <div className="pagina">
@@ -28,12 +36,20 @@ export default function MobileWeek() {
       </div>
       <button className="tem-btn tem-btn--secundario btn-ancho seccion" onClick={() => setLote(true)}>Programar en lote</button>
 
+      {undated.length > 0 && (
+        <section className="sin-fecha" aria-label="Sin fecha">
+          <div className="dia__nombre">Sin fecha</div>
+          <div className="rejilla-piezas">{undated.map((p) => <PieceCard key={p.id} p={p} />)}</div>
+        </section>
+      )}
+
       <div className="semana" style={{ marginTop: 8 }}>
         {DAY_NAMES_FULL.map((name, i) => {
-          const items = visible.filter((p) => p.day === i);
+          const ms = monday + i * DAY;
+          const items = visible.filter((p) => dayOf(p) === noon(ms));
           return (
             <div key={name} className="dia">
-              <div className="dia__nombre">{name} {new Date(monday + i * DAY).getDate()}</div>
+              <div className="dia__nombre">{name} {new Date(ms).getDate()}</div>
               {s.loading ? (
                 <div className="skeleton" style={{ height: 70 }} aria-busy="true" />
               ) : items.length === 0 ? (

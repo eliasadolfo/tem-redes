@@ -1,7 +1,8 @@
 import type { CSSProperties, DragEvent } from "react";
 import { useStore } from "../store";
 import { pieceTitle, platformsStr } from "../lib/platforms";
-import { STAGE_LABEL, missingFor, nextStage } from "../lib/stages";
+import { fmtWhen } from "../lib/dates";
+import { STAGE_LABEL, missingFor, nextStage, pieceWhen } from "../lib/stages";
 import type { Proposal } from "../types";
 
 interface Props {
@@ -20,8 +21,9 @@ export default function PieceCard({ p, draggable = false, style }: Props) {
   const next = nextStage(p.stage);
   const missing = next ? missingFor(p, next) : null;
   const scheduled = p.stage === "listo" || p.stage === "publicado";
+  const when = pieceWhen(p);
   const meta = scheduled
-    ? [platformsStr(p.platforms) || "Sin redes", p.time].filter(Boolean).join(" · ")
+    ? [platformsStr(p.platforms) || "Sin redes", when ? fmtWhen(when) : "Sin fecha"].join(" · ")
     : [p.script?.format || p.type, p.eyebrow].filter(Boolean).join(" · ");
 
   const onDragStart = (e: DragEvent<HTMLElement>) => {

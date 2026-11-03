@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useStore } from "../store";
 import PieceCard from "../components/PieceCard";
-import { STAGES, STAGE_LABEL, parseLine } from "../lib/stages";
-import { DAY_NAMES_FULL } from "../lib/dates";
+import { STAGES, STAGE_LABEL, parseLine, pieceWhen } from "../lib/stages";
+import { noon } from "../lib/dates";
 import type { Proposal, Stage } from "../types";
 
 /** Inicio en el teléfono: resumen del tablero, qué toca hoy e idea rápida. */
@@ -13,10 +13,13 @@ export default function MobileHome() {
   const active = proposals.filter((p) => p.status !== "rejected");
   const count = (st: Stage) => active.filter((p) => p.stage === st).length;
 
-  const dow = new Date().getDay();
-  const today = dow >= 1 && dow <= 5 ? dow - 1 : -1;
+  const today = noon(Date.now());
+  const isToday = (p: Proposal) => {
+    const when = pieceWhen(p);
+    return when !== null && noon(new Date(when).getTime()) === today;
+  };
   const groups: { title: string; items: Proposal[] }[] = [
-    { title: today >= 0 ? `Sale hoy, ${DAY_NAMES_FULL[today].toLowerCase()}` : "Programado", items: active.filter((p) => p.stage === "listo" && p.day === today) },
+    { title: "Sale hoy", items: active.filter((p) => p.stage === "listo" && isToday(p)) },
     { title: "Por editar", items: active.filter((p) => p.stage === "editar") },
     { title: "Por grabar", items: active.filter((p) => p.stage === "grabar") },
   ].filter((g) => g.items.length > 0);

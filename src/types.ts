@@ -67,8 +67,9 @@ export interface Results {
 
 export interface Proposal {
   id: string;
-  day: number; // 0-4 (lun-vie)
-  time: string; // "" = sugerir hora
+  day: number; // 0-4 (lun-vie). Heredado: la fecha real es `scheduled_at`
+  time: string; // "HH:MM" o ""
+  scheduled_at?: string; // fecha y hora completas (ISO)
   platforms: PlatformTag[];
   type: string; // Reel, Short, Video, Newsletter, Post...
   format?: "video" | "vertical";

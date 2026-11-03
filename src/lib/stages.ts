@@ -3,6 +3,7 @@
 
 import type { CheckItem, HeadlineLine, Proposal, ProposalStatus, Script, Stage } from "../types";
 import { deliveryFor, guideFor, pieceFormat } from "./formatos";
+import { fmtWhen, toInputs } from "./dates";
 
 export const STAGES: Stage[] = ["idea", "guion", "grabar", "editar", "listo", "publicado"];
 
@@ -90,6 +91,23 @@ export function parseLine(text: string): HeadlineLine {
   return { pre: m[1], key: m[2], post: m[3] };
 }
 
+/**
+ * Fecha real de la pieza: la publicación si ya salió; si no, la programada, o la que
+ * devolvió el robot por red. `null` = sin fecha: no se ubica en ninguna semana.
+ */
+export function pieceWhen(p: Proposal): string | null {
+  if (p.stage === "publicado" && p.published_at) return p.published_at;
+  if (p.scheduled_at) return p.scheduled_at;
+  const dates = Object.values(p.posts ?? {}).map((r) => r.scheduled_date).filter((d): d is string => Boolean(d)).sort();
+  return dates[0] ?? null;
+}
+
+/** Campos a guardar para una fecha. `day` solo admite lunes a viernes en la base. */
+export function scheduleFields(iso: string): { scheduled_at: string; time: string; day?: number } {
+  const day = (new Date(iso).getDay() + 6) % 7;
+  return { scheduled_at: iso, time: toInputs(iso).time, ...(day <= 4 ? { day } : {}) };
+}
+
 /** Texto para leer en el teleprompter: el guion unido en orden. */
 export function scriptText(p: Proposal): string {
   const s = p.script;
@@ -167,7 +185,10 @@ export function stageSummary(p: Proposal, stage: Stage): string {
     case "editar":
       return p.final_url ? "Video final listo" : (p.notes ? "Instrucciones escritas" : "Sin instrucciones de edición");
     case "listo":
-      return p.time ? `Sale a las ${p.time}` : "Sin hora definida";
+    {
+      const when = pieceWhen(p);
+      return when ? `Sale el ${fmtWhen(when)}` : "Sin fecha";
+    }
     case "publicado": {
       const r = p.results;
       if (!r || r.views == null) return "Sin resultados todavía";
