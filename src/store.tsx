@@ -14,7 +14,6 @@ import type {
   ConnectionDetail,
   DesktopView,
   EditMode,
-  Grain,
   HeadlineLine,
   MetricNet,
   MobileTab,
@@ -23,13 +22,13 @@ import type {
   Proposal,
   Stage,
 } from "./types";
-import { DAY, mondayOf, noon } from "./lib/dates";
+import { DAY, mondayOf } from "./lib/dates";
 import { INITIAL_PROPOSALS } from "./data/mock";
 import {
   fetchConnections,
+  fetchMetrics,
   fetchProposals,
   insertProposals,
-  updateConnection,
   updateProposalFields,
   updateProposalStatus,
   type ProposalFields,
@@ -47,7 +46,8 @@ import {
   hasIA,
   type GenerateOptions,
 } from "./lib/ai";
-import { PLATFORM_LABEL } from "./lib/platforms";
+import { hasSupabase } from "./lib/supabase";
+import { toMetricRow, type MetricRow } from "./lib/metrics";
 import { TAG_TO_NETWORK, fetchConnectionStatus, hasPublishing, publishPiece as publishViaRobot, startConnect } from "./lib/publish";
 import { STAGE_LABEL, missingFor, newItem, statusForStage } from "./lib/stages";
 
@@ -69,7 +69,6 @@ interface State {
   work: string | null; // id de la pieza abierta en el copiloto / sheet
   // copiloto
   variant: 0 | 1 | 2;
-  pubOff: Record<string, boolean>; // redes DESACTIVADAS para publicar
   chat: ChatMessage[];
   // datos
   proposals: Proposal[];
@@ -79,26 +78,20 @@ interface State {
   publishing: string | null; // id de la pieza que se está publicando
   // calendario
   calWeekStart: number;
-  calPickerOpen: boolean;
-  calPickerY: number;
-  calPickerM: number;
-  // métricas
-  metricStart: number;
-  metricEnd: number;
-  grain: Grain;
+  // métricas (reales, de tem_metrics)
+  metrics: MetricRow[];
+  metricsState: "cargando" | "listo" | "error";
   metricNet: MetricNet;
-  pickerOpen: boolean;
-  pickerY: number;
-  pickerM: number;
-  picking: "start" | "end";
   // biblioteca
-  libFilter: string;
+  libFilter: PlatformTag | "Todas";
   // feedback
   toast: string | null;
   /** Acción reversible asociada al toast actual (H03: deshacer). */
   undo: (() => void) | null;
   /** Carga inicial desde Supabase en curso (H01: visibilidad del estado). */
   loading: boolean;
+  /** No se pudieron leer las piezas: se dice, nunca se muestran datos de ejemplo. */
+  loadError: boolean;
   // IA
   generating: boolean;
   chatBusy: boolean; // el copiloto está aplicando un ajuste
@@ -113,29 +106,21 @@ const initialState: State = {
   tab: "inicio",
   work: null,
   variant: 0,
-  pubOff: {},
   chat: [],
-  proposals: INITIAL_PROPOSALS,
-  connections: { Instagram: true, TikTok: true, YouTube: false, LinkedIn: false },
+  proposals: hasSupabase ? [] : INITIAL_PROPOSALS,
+  connections: {},
   connDetails: {},
   connChecking: false,
   publishing: null,
-  calWeekStart: new Date(2026, 6, 20, 12).getTime(),
-  calPickerOpen: false,
-  calPickerY: 2026,
-  calPickerM: 6,
-  metricStart: new Date(2026, 5, 24, 12).getTime(),
-  metricEnd: new Date(2026, 6, 23, 12).getTime(),
-  grain: "días",
+  calWeekStart: mondayOf(Date.now()),
+  metrics: [],
+  metricsState: "cargando",
   metricNet: "Todas",
-  pickerOpen: false,
-  pickerY: 2026,
-  pickerM: 6,
-  picking: "start",
   libFilter: "Todas",
   toast: null,
   undo: null,
   loading: true,
+  loadError: false,
   generating: false,
   chatBusy: false,
   aiBusy: null,
@@ -161,13 +146,14 @@ interface Actions {
   openWork: (id: string) => void;
   closeWork: () => void;
   setVariant: (v: 0 | 1 | 2) => void;
-  togglePub: (tag: PlatformTag) => void;
+  /** Enciende o apaga una red en una pieza (se guarda al tiro). */
+  togglePlatform: (id: string, tag: PlatformTag) => void;
+  /** Lote: asigna redes, día y hora a varias piezas a la vez (con Deshacer). */
+  applyBatch: (ids: string[], change: { platforms?: PlatformTag[]; day?: number; time?: string }) => void;
   sendChat: (text: string) => void;
   /** Agrega un mensaje del asistente al chat del copiloto (p.ej. tras un encargo de IA). */
   say: (text: string) => void;
   reject: (id: string) => void;
-  /** "Programar publicación": pasa la pieza abierta a Listo con las redes activas. */
-  publishNow: () => void;
   /**
    * Mueve la pieza a otra etapa. Hacia atrás siempre; hacia adelante solo si
    * cumple el requisito (si no, avisa qué falta). Devuelve true si se movió.
@@ -186,29 +172,21 @@ interface Actions {
   flash: (text: string, undo?: (() => void) | null) => void;
   // calendario
   calWeekNav: (delta: number) => void;
-  toggleCalPicker: () => void;
-  closeCalPicker: () => void;
-  calPickerNav: (delta: number) => void;
-  calPickDay: (ms: number) => void;
+  calToday: () => void;
   // métricas
   setNet: (net: MetricNet) => void;
-  setGrain: (grain: Grain) => void;
-  presetDays: (n: number) => void;
-  presetMonths: (n: number) => void;
-  togglePicker: () => void;
-  closePicker: () => void;
-  pickerNav: (delta: number) => void;
-  pickDay: (ms: number) => void;
+  loadMetrics: () => Promise<void>;
   // biblioteca
-  setLib: (filter: string) => void;
+  setLib: (filter: PlatformTag | "Todas") => void;
+  /** Vuelve a leer las piezas (tras un error de carga). */
+  reload: () => Promise<void>;
   // conexiones
-  toggleConn: (net: Network) => void;
-  /** Lee el estado real de las redes (Upload-Post) y lo guarda. */
+  /** Lee el estado real de las redes y lo guarda. */
   refreshConnections: () => Promise<void>;
   /** Abre la autorización oficial de una red. */
   connectNetwork: (net: Network) => Promise<void>;
   /** Publica (o programa si `when` es ISO futuro) la pieza en sus redes activas. Devuelve `true` si todo salió bien. */
-  publishPiece: (id: string, when?: string | null) => Promise<boolean>;
+  publishPiece: (id: string, when?: string | null, opts?: { trial?: boolean }) => Promise<boolean>;
   // IA
   generate: (opts?: GenerateOptions) => Promise<void>;
   /** Pide ideas nuevas al asistente a partir del tema de la semana. */
@@ -265,7 +243,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       patch({
         work: id,
         variant: 0,
-        pubOff: {},
         chat: [{ role: "ai", text: OPEN_TEXT[stage] }],
       });
     };
@@ -304,7 +281,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         time: "",
         platforms: ["IG"],
         type: "Reel",
-        eyebrow: eyebrow ?? "LA IDEA",
+        eyebrow: eyebrow ?? "",
         line,
         status: "proposal",
         caption: "",
@@ -347,8 +324,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const setStage = (id: string, stage: Stage): boolean => {
       const p = sRef.current.proposals.find((x) => x.id === id);
       if (!p || p.stage === stage) return false;
-      const active = p.platforms.filter((t) => !sRef.current.pubOff[t]).length;
-      const missing = missingFor(p, stage, active);
+      const missing = missingFor(p, stage);
       if (missing) {
         flash(missing);
         return false;
@@ -455,8 +431,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       openWork,
       closeWork: () => patch({ work: null }),
       setVariant: (variant) => patch({ variant }),
-      togglePub: (tag) =>
-        patch((prev) => ({ pubOff: { ...prev.pubOff, [tag]: !prev.pubOff[tag] } })),
+      togglePlatform: (id, tag) => {
+        const p = sRef.current.proposals.find((x) => x.id === id);
+        if (!p) return;
+        const platforms = p.platforms.includes(tag) ? p.platforms.filter((t) => t !== tag) : [...p.platforms, tag];
+        applyFields(id, { platforms });
+      },
+      applyBatch: (ids, change) => {
+        const pieces = sRef.current.proposals.filter((p) => ids.includes(p.id));
+        const before = pieces.map((p) => ({ id: p.id, platforms: p.platforms, day: p.day, time: p.time }));
+        pieces.forEach((p) => applyFields(p.id, change));
+        flash(pieces.length === 1 ? "1 pieza actualizada" : `${pieces.length} piezas actualizadas`, () => {
+          before.forEach(({ id, ...old }) => applyFields(id, old));
+        });
+      },
       // Copiloto: Claude aplica la instrucción sobre la pieza abierta
       sendChat: (text) => {
         const clean = text.trim();
@@ -505,100 +493,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         u();
         flash("Listo, lo deshice");
       },
-      publishNow: () => {
-        const prev = sRef.current;
-        const w = prev.proposals.find((p) => p.id === prev.work);
-        if (!w) return;
-        const active = w.platforms.filter((t) => !prev.pubOff[t]);
-        if (active.length === 0) {
-          flash("Elige al menos una red");
-          return;
-        }
-        const nice = active.map((t) => PLATFORM_LABEL[t]).join(", ");
-        const beforePlatforms = w.platforms;
-        // "Listo" guarda las redes elegidas: las desactivadas se quitan de la pieza.
-        if (active.length !== w.platforms.length) applyFields(w.id, { platforms: active });
-        const already = w.stage === "listo" || w.stage === "publicado";
-        if (!already && !setStage(w.id, "listo")) {
-          applyFields(w.id, { platforms: beforePlatforms });
-          return;
-        }
-        patch({ work: null, pubOff: {} });
-        flash("Programada para " + nice, () => {
-          applyFields(w.id, { stage: w.stage, status: w.status, platforms: beforePlatforms });
-        });
-      },
       flash,
       // calendario
       calWeekNav: (delta) =>
         patch((prev) => ({ calWeekStart: prev.calWeekStart + delta * 7 * DAY })),
-      toggleCalPicker: () =>
-        patch((prev) => {
-          const d = new Date(prev.calWeekStart);
-          return {
-            calPickerOpen: !prev.calPickerOpen,
-            calPickerY: d.getFullYear(),
-            calPickerM: d.getMonth(),
-          };
-        }),
-      closeCalPicker: () => patch({ calPickerOpen: false }),
-      calPickerNav: (delta) =>
-        patch((prev) => {
-          const m = prev.calPickerM + delta;
-          const y = prev.calPickerY + Math.floor(m / 12);
-          return { calPickerY: y, calPickerM: ((m % 12) + 12) % 12 };
-        }),
-      calPickDay: (ms) => patch({ calWeekStart: mondayOf(ms), calPickerOpen: false }),
+      calToday: () => patch({ calWeekStart: mondayOf(Date.now()) }),
       // métricas
       setNet: (net) => patch({ metricNet: net }),
-      setGrain: (grain) => patch({ grain }),
-      presetDays: (n) =>
-        patch((prev) => {
-          const end = prev.metricEnd;
-          return { metricStart: noon(end - (n - 1) * DAY), metricEnd: noon(end), grain: "días" };
-        }),
-      presetMonths: (n) =>
-        patch((prev) => {
-          const e = new Date(prev.metricEnd);
-          const start = new Date(e.getFullYear(), e.getMonth() - (n - 1), 1, 12).getTime();
-          return { metricStart: start, grain: "meses" };
-        }),
-      togglePicker: () =>
-        patch((prev) => {
-          const d = new Date(prev.metricEnd);
-          return {
-            pickerOpen: !prev.pickerOpen,
-            pickerY: d.getFullYear(),
-            pickerM: d.getMonth(),
-            picking: "start",
-          };
-        }),
-      closePicker: () => patch({ pickerOpen: false }),
-      pickerNav: (delta) =>
-        patch((prev) => {
-          const m = prev.pickerM + delta;
-          const y = prev.pickerY + Math.floor(m / 12);
-          return { pickerY: y, pickerM: ((m % 12) + 12) % 12 };
-        }),
-      pickDay: (ms) =>
-        patch((prev) => {
-          const t = noon(ms);
-          if (prev.picking === "start") {
-            return { metricStart: t, metricEnd: t, picking: "end" };
-          }
-          // segundo clic: fija fin, ordena si es anterior, cierra
-          const start = Math.min(prev.metricStart, t);
-          const end = Math.max(prev.metricStart, t);
-          return { metricStart: start, metricEnd: end, picking: "start", pickerOpen: false };
-        }),
+      loadMetrics: async () => {
+        patch({ metricsState: "cargando" });
+        const raw = await fetchMetrics();
+        if (raw === null) patch({ metricsState: "error" });
+        else patch({ metrics: raw.map(toMetricRow), metricsState: "listo" });
+      },
       // biblioteca
       setLib: (libFilter) => patch({ libFilter }),
-      // conexiones
-      toggleConn: (net) => {
-        const next = !sRef.current.connections[net];
-        patch((prev) => ({ connections: { ...prev.connections, [net]: next } }));
-        void updateConnection(net, next);
+      reload: async () => {
+        patch({ loading: true, loadError: false });
+        const props = await fetchProposals();
+        if (props) patch({ proposals: props, loading: false });
+        else patch({ loading: false, loadError: true });
       },
+      // conexiones
       refreshConnections: async () => {
         if (sRef.current.connChecking) return;
         patch({ connChecking: true });
@@ -635,16 +551,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           flash(`No pude abrir la conexión de ${net}: ${(e as Error).message}`);
         }
       },
-      publishPiece: async (id, when) => {
+      publishPiece: async (id, when, opts) => {
         const p = sRef.current.proposals.find((x) => x.id === id);
         if (!p || sRef.current.publishing) return false;
-        const nets = [...new Set(p.platforms.filter((t) => !sRef.current.pubOff[t]).map((t) => TAG_TO_NETWORK[t]).filter((n): n is Network => Boolean(n)))];
+        const nets = [...new Set(p.platforms.map((t) => TAG_TO_NETWORK[t]).filter((n): n is Network => Boolean(n)))];
         if (nets.length === 0) { flash("Elige al menos una red"); return false; }
         const notConnected = nets.filter((n) => !sRef.current.connections[n]);
         if (notConnected.length) { flash(`Primero conecta ${notConnected.join(", ")} en Perfil`); return false; }
         patch({ publishing: id });
         try {
-          const r = await publishViaRobot(id, nets, when);
+          const r = await publishViaRobot(id, nets, when, opts);
           const before: ProposalFields = { posts: p.posts ?? null, stage: p.stage, status: p.status, published_at: p.published_at ?? null };
           const fields: ProposalFields = { posts: r.posts };
           if (r.published) { fields.stage = "publicado"; fields.status = statusForStage("publicado"); fields.published_at = new Date().toISOString(); }
@@ -683,7 +599,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             time: "",
             platforms: ["IG"],
             type: "Reel",
-            eyebrow: "LA IDEA",
+            eyebrow: "",
             line: i.line,
             status: "proposal",
             caption: "",
@@ -760,8 +676,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
   }, [patch, flash]);
 
-  // Carga inicial desde Supabase (si está configurado). Si falla o no hay
-  // conexión, la app sigue con los datos mock iniciales.
+  // Carga inicial desde Supabase (si está configurado). Si falla, se avisa: nunca
+  // se muestran datos de ejemplo en su lugar.
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -769,6 +685,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (!alive) return;
       const upd: Partial<State> = { loading: false };
       if (props) upd.proposals = props;
+      else if (hasSupabase) upd.loadError = true;
       if (conns) {
         upd.connDetails = conns;
         upd.connections = Object.fromEntries(Object.entries(conns).map(([k, v]) => [k, v.connected]));
