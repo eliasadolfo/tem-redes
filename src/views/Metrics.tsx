@@ -1,204 +1,156 @@
+import { useEffect, useMemo } from "react";
 import { useStore } from "../store";
-import { computeMetrics } from "../lib/metrics";
-import { M_ABBR, noon } from "../lib/dates";
-import { THEMES } from "../data/mock";
-import CalendarPopover from "../components/CalendarPopover";
-import type { Grain, MetricNet } from "../types";
+import { METRIC_NETS } from "../lib/platforms";
+import { M_ABBR } from "../lib/dates";
+import { MIN_REACH, buildMetrics, fmtInt, fmtRate, type MetricGroup } from "../lib/metrics";
 
-const NETS: MetricNet[] = ["Todas", "Instagram", "TikTok", "YouTube", "LinkedIn"];
-const PRESETS: { label: string; days?: number; months?: number }[] = [
-  { label: "7 días", days: 7 },
-  { label: "30 días", days: 30 },
-  { label: "90 días", days: 90 },
-  { label: "12 meses", months: 12 },
-];
-
+/** Métricas con datos reales de `tem_metrics`. Misma pantalla en escritorio y teléfono. */
 export default function Metrics() {
   const s = useStore();
-  const { actions } = s;
-  const m = computeMetrics(s.metricStart, s.metricEnd, s.grain, s.metricNet);
+  const { actions, metrics, metricsState, metricNet, proposals } = s;
 
-  const startD = new Date(s.metricStart);
-  const endD = new Date(s.metricEnd);
-  const rangeLabel = `${startD.getDate()} ${M_ABBR[startD.getMonth()]} – ${endD.getDate()} ${M_ABBR[endD.getMonth()]} ${endD.getFullYear()}`;
+  useEffect(() => {
+    void actions.loadMetrics();
+  }, [actions]);
+
+  const m = useMemo(() => buildMetrics(metrics, proposals, metricNet), [metrics, proposals, metricNet]);
+  const hasAny = metrics.length > 0;
+  const captured = m.lastCapture ? new Date(m.lastCapture) : null;
 
   return (
-    <div style={{ padding: "32px 40px", maxWidth: 900 }}>
-      <div className="eyebrow">Rendimiento</div>
-      <h1 style={{ margin: "6px 0 20px", fontWeight: 600, fontSize: 30, letterSpacing: "-.02em" }}>Métricas</h1>
-
-      {/* fila de rango */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", marginBottom: 18 }}>
-        <div style={{ position: "relative" }}>
-          <button
-            className="press"
-            onClick={actions.togglePicker}
-            style={{
-              display: "flex", alignItems: "center", gap: 8, background: "var(--tem-surface)",
-              border: "1px solid var(--tem-border)", borderRadius: 12, padding: "10px 16px", cursor: "pointer",
-            }}
-          >
-            <span style={{ fontSize: 14, fontWeight: 500 }}>{rangeLabel}</span>
-            <span style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)" }}>elegir</span>
-          </button>
-          {s.pickerOpen && (
-            <CalendarPopover
-              year={s.pickerY}
-              month={s.pickerM}
-              onPrevMonth={() => actions.pickerNav(-1)}
-              onNextMonth={() => actions.pickerNav(1)}
-              onPickDay={actions.pickDay}
-              onClose={actions.closePicker}
-              helpText="Elige la fecha de inicio y la de fin."
-              cellStyle={(ms) => {
-                const t = noon(ms);
-                const isEnd = t === s.metricStart || t === s.metricEnd;
-                const inRange = t >= s.metricStart && t <= s.metricEnd;
-                if (isEnd) return { bg: "var(--tem-ink)", fg: "#fff" };
-                return { bg: inRange ? "rgba(244,124,60,0.24)" : "transparent", fg: "var(--tem-ink)" };
-              }}
-            />
-          )}
-        </div>
-
-        {/* toggle días/meses */}
-        <div style={{ display: "flex", background: "var(--tem-surface)", border: "1px solid var(--tem-border)", borderRadius: 12, padding: 3 }}>
-          {(["días", "meses"] as Grain[]).map((g) => {
-            const active = s.grain === g;
-            return (
-              <button
-                key={g}
-                className="press"
-                onClick={() => actions.setGrain(g)}
-                style={{
-                  all: "unset", cursor: "pointer", fontSize: 13, fontWeight: 500, padding: "6px 14px", borderRadius: 9,
-                  background: active ? "var(--tem-ink)" : "transparent", color: active ? "#fff" : "var(--tem-ink)",
-                }}
-              >
-                {g === "días" ? "Días" : "Meses"}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* accesos rápidos */}
-        <div style={{ display: "flex", gap: 12, marginLeft: 2 }}>
-          {PRESETS.map((p) => (
-            <button
-              key={p.label}
-              className="preset"
-              onClick={() => (p.days ? actions.presetDays(p.days) : actions.presetMonths(p.months!))}
-              style={{
-                all: "unset", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "var(--tem-handle)",
-              }}
-            >
-              {p.label}
-            </button>
-          ))}
+    <div className="pagina">
+      <div className="cabecera">
+        <div className="cabecera__texto">
+          <h1 className="tem-h1">Métricas</h1>
+          <p className="tem-caption">
+            {m.best ? `Lo que más se guarda y se comparte: ${m.best.title}.` : "Qué funciona, por pieza y por red."}
+            {captured ? ` Medido el ${captured.getDate()} de ${M_ABBR[captured.getMonth()]}.` : ""}
+          </p>
         </div>
       </div>
 
-      {/* fila RED: */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
-        <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: ".14em", color: "var(--tem-handle)", marginRight: 4 }}>
-          RED:
-        </span>
-        {NETS.map((n) => {
-          const active = s.metricNet === n;
-          return (
-            <button
-              key={n}
-              className="press"
-              onClick={() => actions.setNet(n)}
-              style={{
-                all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 500, padding: "7px 14px", borderRadius: 999,
-                border: "1px solid var(--tem-border)",
-                background: active ? "var(--tem-ink)" : "var(--tem-surface)", color: active ? "#fff" : "var(--tem-ink)",
-              }}
-            >
-              {n}
-            </button>
-          );
-        })}
+      <div className="filtros" role="group" aria-label="Filtrar por red">
+        {METRIC_NETS.map((n) => (
+          <button key={n} className="filtro" aria-pressed={metricNet === n} onClick={() => actions.setNet(n)}>{n}</button>
+        ))}
       </div>
 
-      {/* 4 tarjetas globales */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 20 }}>
-        {m.stats.map((st) => (
-          <div key={st.label} style={{ background: "var(--tem-surface)", borderRadius: 18, padding: 18, boxShadow: "var(--sh-card)" }}>
-            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-handle)" }}>{st.label}</div>
-            <div className="num" style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-.03em", margin: "6px 0 2px" }}>{st.value}</div>
-            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-orange)" }}>{st.delta}</div>
+      {metricsState === "error" ? (
+        <div className="tem-aviso tem-aviso--error fila fila--entre" role="alert">
+          <span>No pude leer las métricas. Revisa tu conexión y vuelve a intentar.</span>
+          <button className="tem-btn tem-btn--texto btn-chico" onClick={() => void actions.loadMetrics()}>Reintentar</button>
+        </div>
+      ) : metricsState === "cargando" && !hasAny ? (
+        <div className="metricas" aria-busy="true">
+          {[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 124 }} />)}
+        </div>
+      ) : !hasAny ? (
+        <div className="tem-card">
+          <div className="vacio">
+            <h2 className="tem-title">Todavía no hay mediciones</h2>
+            <p>Aparecen aquí cuando se mida lo publicado. No se muestra nada que no venga de las redes.</p>
           </div>
-        ))}
-      </div>
-
-      {/* evolución del alcance */}
-      <div style={{ background: "var(--tem-surface)", borderRadius: 20, padding: 24, boxShadow: "var(--sh-card)", marginBottom: 20 }}>
-        <div style={{ fontSize: 16, fontWeight: 600 }}>Evolución del alcance</div>
-        <div style={{ fontSize: 13, color: "var(--tem-handle)", margin: "4px 0 18px" }}>
-          {m.netLabel} · alcance {m.chartUnit} · {rangeLabel}
         </div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 200 }}>
-          {m.bars.map((b, i) => (
-            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end" }}>
-              <div
-                style={{
-                  width: "100%", maxWidth: 40, height: b.h, borderRadius: "8px 8px 0 0",
-                  background: b.max ? "var(--tem-orange)" : "rgba(244,124,60,0.5)",
-                }}
-              />
-              <div style={{ fontSize: 11, fontWeight: 500, color: "var(--tem-handle)", marginTop: 6, whiteSpace: "nowrap" }}>
-                {b.label}
-              </div>
-            </div>
-          ))}
+      ) : m.rows.length === 0 ? (
+        <div className="tem-card">
+          <div className="vacio">
+            <h2 className="tem-title">Sin mediciones en {metricNet}</h2>
+            <p>Esta red todavía no tiene datos. Prueba con otra o con Todas.</p>
+          </div>
         </div>
-      </div>
-
-      {/* por red social */}
-      <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Por red social</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
-        {m.networkStats.map((ns) => (
-          <button
-            key={ns.net}
-            className="press"
-            onClick={() => actions.setNet(ns.selected ? "Todas" : (ns.net as MetricNet))}
-            style={{
-              all: "unset", cursor: "pointer", boxSizing: "border-box", background: "var(--tem-surface)",
-              borderRadius: 18, padding: 18, boxShadow: "var(--sh-card)",
-              border: `2px solid ${ns.selected ? "var(--tem-orange)" : "transparent"}`,
-            }}
-          >
-            <div style={{ fontSize: 13, fontWeight: 500, color: "var(--tem-handle)" }}>{ns.net}</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8, margin: "6px 0 2px" }}>
-              <span className="num" style={{ fontSize: 28, fontWeight: 600, letterSpacing: "-.02em" }}>{ns.reach}</span>
-              <span style={{ fontSize: 12, fontWeight: 500, color: "var(--tem-orange)" }}>{ns.delta}</span>
+      ) : (
+        <>
+          <section className="metricas" aria-label="Resumen">
+            <div className="tem-card">
+              <p className="tem-metric__label">Guardados y compartidos</p>
+              <p className="tem-metric__valor tem-metric__valor--clave">{fmtRate(m.total.rate)}</p>
+              <p className="tem-metric__nota">por 1.000 de alcance</p>
             </div>
-            <div style={{ fontSize: 12, color: "var(--tem-handle)" }}>{ns.foll} seguidores</div>
-          </button>
-        ))}
-      </div>
-
-      {/* temas que más interesan */}
-      <div style={{ background: "var(--tem-surface)", borderRadius: 20, padding: 24, boxShadow: "var(--sh-card)" }}>
-        <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Temas que más interesan</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {THEMES.map((t) => (
-            <div key={t.name}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                <span style={{ fontSize: 14, fontWeight: 500 }}>{t.name}</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--tem-handle)" }}>
-                  {t.pct} · {t.note}
-                </span>
-              </div>
-              <div style={{ height: 6, borderRadius: 999, background: "var(--tem-bg)", overflow: "hidden" }}>
-                <div style={{ width: t.pct, height: "100%", borderRadius: 999, background: "var(--tem-orange)" }} />
-              </div>
+            <div className="tem-card">
+              <p className="tem-metric__label">Alcance</p>
+              <p className="tem-metric__valor">{fmtInt(m.total.reach)}</p>
+              <p className="tem-metric__nota">sumado entre publicaciones</p>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="tem-card">
+              <p className="tem-metric__label">Piezas medidas</p>
+              <p className="tem-metric__valor">{m.total.pieces}</p>
+              <p className="tem-metric__nota">{m.rows.length === 1 ? "1 publicación" : `${m.rows.length} publicaciones`}</p>
+            </div>
+          </section>
+
+          <section className="tem-card seccion" aria-labelledby="t-pieza">
+            <div className="tarjeta-cabeza">
+              <h2 className="tem-title" id="t-pieza">Por pieza</h2>
+              <span className="tem-caption">Con menos de {MIN_REACH} de alcance la tasa no dice mucho: esas van al final.</span>
+            </div>
+            <div className="tabla-scroll">
+              <table className="tem-table">
+                <thead>
+                  <tr>
+                    <th>Pieza</th><th>Red</th><th className="num">Alcance</th><th className="num">Vistas</th>
+                    <th className="num">Guardados</th><th className="num">Compartidos</th><th className="num">Por 1.000</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {m.pieces.map((g) => <PieceRow key={g.key} g={g} best={g.key === m.best?.key} />)}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="tem-card" aria-labelledby="t-red">
+            <div className="tarjeta-cabeza">
+              <h2 className="tem-title" id="t-red">Por red</h2>
+            </div>
+            <div className="tabla-scroll">
+              <table className="tem-table">
+                <thead>
+                  <tr>
+                    <th>Red</th><th className="num">Publicaciones</th><th className="num">Alcance</th>
+                    <th className="num">Guardados</th><th className="num">Compartidos</th><th className="num">Por 1.000</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {m.networks.map((g) => (
+                    <tr key={g.key} aria-selected={metricNet === g.key || undefined}>
+                      <td className="medio">{g.title}</td>
+                      <td className="num">{g.posts}</td>
+                      <td className="num">{fmtInt(g.reach)}</td>
+                      <td className="num">{fmtInt(g.saves)}</td>
+                      <td className="num">{fmtInt(g.shares)}</td>
+                      <td className="num">{fmtRate(g.rate)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </>
+      )}
     </div>
+  );
+}
+
+function PieceRow({ g, best }: { g: MetricGroup; best: boolean }) {
+  const { actions } = useStore();
+  return (
+    <tr>
+      <td className="tem-table__pieza">
+        {g.proposalId ? (
+          <button className="boton-plano medio" onClick={() => actions.openWork(g.proposalId as string)}>{g.title}</button>
+        ) : g.permalink ? (
+          <a className="enlace medio" href={g.permalink} target="_blank" rel="noreferrer">{g.title}</a>
+        ) : (
+          <span className="medio">{g.title}</span>
+        )}
+        {g.isTest && <span className="tem-tag">Prueba</span>}
+      </td>
+      <td>{g.nets.join(" · ")}</td>
+      <td className="num">{fmtInt(g.reach)}</td>
+      <td className="num">{fmtInt(g.views)}</td>
+      <td className="num">{fmtInt(g.saves)}</td>
+      <td className="num">{fmtInt(g.shares)}</td>
+      <td className={`num${best ? " dato-clave" : ""}`}>{fmtRate(g.rate)}</td>
+    </tr>
   );
 }

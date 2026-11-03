@@ -1,14 +1,7 @@
-// Datos mock determinísticos — extraídos 1:1 del prototipo de diseño.
-// Copy final en español latinoamericano neutro (ver handoff §Voz y copy).
-// En producción: reemplazar por lo que traiga el backend / las APIs.
+// Piezas de ejemplo para el modo demostración (sin .env). Con Supabase configurado
+// nunca se muestran. También viven aquí el handle y los estilos de la pieza.
 
-import type {
-  GalleryItem,
-  Proposal,
-  ThemeRow,
-  Variant,
-  Network,
-} from "../types";
+import type { Proposal, Variant } from "../types";
 
 export const HANDLE = "@tuescuelademarcas";
 
@@ -110,45 +103,9 @@ export const INITIAL_PROPOSALS: Proposal[] = [
   },
 ];
 
+/** Estilos de pieza. Colores fijos: una pieza nunca sigue el tema de la app. */
 export const VARIANTS: Variant[] = [
-  { bg: "#FFFFFF", fg: "#111111" },
-  { bg: "#111111", fg: "#FFFFFF" },
-  { bg: "#1D3557", fg: "#FFFFFF" },
+  { name: "Blanca", bg: "#EFEFEF", card: "#FFFFFF", fg: "#111111" },
+  { name: "Negra", bg: "#EFEFEF", card: "#111111", fg: "#FFFFFF" },
+  { name: "Azul", bg: "#1D3557", card: "#FFFFFF", fg: "#111111" },
 ];
-
-export const GALLERY: GalleryItem[] = [
-  { eyebrow: "EL COSTO", pre: "Perder tu marca cuesta ", key: "$3,500", post: ".", bg: "#111111", fg: "#FFFFFF", net: "TikTok", platStr: "TikTok", reach: "38K" },
-  { eyebrow: "LA SOLUCIÓN", pre: "Regístrala en ", key: "90 días", post: ".", bg: "#1D3557", fg: "#FFFFFF", net: "Instagram", platStr: "Instagram", reach: "25K" },
-  { eyebrow: "EL PROBLEMA", pre: "Tu marca ", key: "no es tuya", post: " aún.", bg: "#FFFFFF", fg: "#111111", net: "Shorts", platStr: "Shorts", reach: "31K" },
-  { eyebrow: "EL DATO", pre: "El ", key: "80%", post: " no se registra.", bg: "#FFFFFF", fg: "#111111", net: "Instagram", platStr: "Instagram", reach: "19K" },
-  { eyebrow: "TEM", pre: "¡Hagamos que ", key: "pase", post: "!", bg: "#F47C3C", fg: "#FFFFFF", net: "Instagram", platStr: "Instagram", reach: "22K" },
-  { eyebrow: "EL TRÁMITE", pre: "Toma ", key: "90 días", post: ", no dolores.", bg: "#111111", fg: "#FFFFFF", net: "Shorts", platStr: "Shorts", reach: "17K" },
-  { eyebrow: "YOUTUBE", pre: "Registra tu marca en ", key: "90 días", post: ".", bg: "#111111", fg: "#FFFFFF", net: "YouTube", platStr: "YouTube · 8:24", reach: "9.4K" },
-  { eyebrow: "PARA FUNDADORES", pre: "Tu marca es tu ", key: "activo", post: ".", bg: "#FFFFFF", fg: "#111111", net: "LinkedIn", platStr: "LinkedIn", reach: "5.8K" },
-  { eyebrow: "EL COSTO", pre: "No registrarla te ", key: "cuesta más", post: ".", bg: "#1D3557", fg: "#FFFFFF", net: "TikTok", platStr: "TikTok", reach: "14K" },
-];
-
-export const LIB_CHIPS = ["Todas", "Instagram", "TikTok", "Shorts", "YouTube", "LinkedIn"] as const;
-
-export const THEMES: ThemeRow[] = [
-  { name: "Costo de perder la marca", pct: "92%", note: "Alto interés" },
-  { name: "Registro paso a paso", pct: "78%", note: "Guardan mucho" },
-  { name: "Errores comunes al emprender", pct: "64%", note: "Comentan" },
-  { name: "Precios y plazos reales", pct: "57%", note: "Preguntan" },
-  { name: "Casos de marcas reales", pct: "49%", note: "Comparten" },
-];
-
-export const NET_HANDLES: Record<Network, string> = {
-  Instagram: "@tuescuelademarcas",
-  TikTok: "@tuescuelademarcas",
-  Shorts: "TEM · Tu Escuela de Marcas",
-  YouTube: "TEM · Tu Escuela de Marcas",
-  LinkedIn: "Elías Adolfo",
-};
-
-/** Redes con estado de conexión OAuth (mock). */
-export const CONNECTABLE: Network[] = ["Instagram", "TikTok", "YouTube", "LinkedIn"];
-
-/** Chat inicial del copiloto al abrir una pieza. */
-export const INITIAL_CHAT_TEXT =
-  "Preparé esta pieza. Puedes cambiar el estilo con las variantes o pedirme un ajuste.";

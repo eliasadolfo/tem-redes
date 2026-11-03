@@ -1,162 +1,173 @@
-// Motor de métricas — serie determinística por día (estable entre renders).
-// En producción se reemplaza por las métricas reales de cada API manteniendo
-// la misma forma: serie diaria por red + agregación en cliente.
+// Métricas reales: `tem_metrics` trae una foto por publicación y día. Aquí se queda
+// la foto más reciente de cada publicación y se agrupa por pieza y por red. Tolera
+// columnas nuevas y valores vacíos; nunca completa un dato que no existe.
 
-import { DAY, M_ABBR } from "./dates";
-import type { Grain, MetricNet } from "../types";
+import { pieceTitle } from "./platforms";
+import type { MetricNet, Network, Proposal } from "../types";
 
-const ANCHOR = new Date(2025, 6, 1, 12).getTime();
+/** Bajo este alcance la tasa no dice mucho: esas filas van al final. */
+export const MIN_REACH = 100;
 
-/** Alcance (en miles) de un día dado — determinístico, no aleatorio. */
-export function reachOn(ms: number): number {
-  const t = Math.floor((ms - ANCHOR) / DAY);
-  return Math.max(
-    1.2,
-    3.4 + t * 0.008 + 1.9 * Math.sin(t / 6.3) + ((Math.abs(t) * 53) % 13) / 8,
-  );
+export interface MetricRow {
+  id: string;
+  platform: string; // red canónica: "Instagram", "Threads"…
+  proposal_id: string | null;
+  external_id: string | null;
+  permalink: string | null;
+  origin_code: string | null;
+  hook: string | null;
+  notes: string | null;
+  is_test: boolean;
+  published_at: string | null;
+  captured_at: string | null;
+  views: number | null;
+  reach: number | null;
+  saves: number | null;
+  shares: number | null;
 }
 
-const sign = (n: number) => (n >= 0 ? "+" : "") + n;
-const fmtK = (vK: number) =>
-  vK >= 1000 ? (vK / 1000).toFixed(1) + "M" : Math.round(vK) + "K";
-
-interface NetInfo {
-  share: number;
-  g: number; // multiplicador de crecimiento del delta
-  foll: string;
+export interface MetricGroup {
+  key: string;
+  title: string;
+  /** Para abrir la ficha, si la métrica ya está ligada a una pieza. */
+  proposalId: string | null;
+  permalink: string | null;
+  nets: string[];
+  posts: number;
+  isTest: boolean;
+  views: number | null;
+  reach: number | null;
+  saves: number | null;
+  shares: number | null;
+  /** Guardados + compartidos por 1.000 de alcance; null si no hay alcance. */
+  rate: number | null;
 }
-const NET_INFO: Record<string, NetInfo> = {
-  Todas: { share: 1, g: 1, foll: "18,540" },
-  Instagram: { share: 0.5, g: 0.8, foll: "6,120" },
-  TikTok: { share: 0.3, g: 1.4, foll: "2,480" },
-  YouTube: { share: 0.09, g: 3, foll: "610" },
-  LinkedIn: { share: 0.11, g: 0.7, foll: "1,130" },
+
+const NET_NAME: Record<string, Network> = {
+  instagram: "Instagram", ig: "Instagram",
+  facebook: "Facebook", fb: "Facebook",
+  threads: "Threads",
+  tiktok: "TikTok",
+  youtube: "YouTube", shorts: "YouTube",
+  linkedin: "LinkedIn", in: "LinkedIn",
 };
 
-export interface StatCard {
-  label: string;
-  value: string;
-  delta: string;
+function num(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }
-export interface NetworkStat {
-  net: string;
-  reach: string;
-  delta: string;
-  foll: string;
-  selected: boolean;
-}
-export interface Bar {
-  h: string; // altura porcentual
-  label: string;
-  max: boolean; // la barra máxima va en naranja sólido
+function str(v: unknown): string | null {
+  return typeof v === "string" && v.trim() ? v : null;
 }
 
-export interface MetricsResult {
-  stats: StatCard[];
-  networkStats: NetworkStat[];
-  bars: Bar[];
-  chartUnit: string;
-  netLabel: string;
+/** De una fila cruda a lo que usa la pantalla; lo demás se ignora. */
+export function toMetricRow(raw: Record<string, unknown>): MetricRow {
+  const platform = String(raw.platform ?? "").trim();
+  return {
+    id: String(raw.id ?? ""),
+    platform: NET_NAME[platform.toLowerCase()] ?? (platform || "Sin red"),
+    proposal_id: str(raw.proposal_id),
+    external_id: str(raw.external_id),
+    permalink: str(raw.permalink),
+    origin_code: str(raw.origin_code),
+    hook: str(raw.hook),
+    notes: str(raw.notes),
+    is_test: raw.is_test === true,
+    published_at: str(raw.published_at),
+    captured_at: str(raw.captured_at) ?? str(raw.captured_day),
+    views: num(raw.views),
+    reach: num(raw.reach),
+    saves: num(raw.saves),
+    shares: num(raw.shares),
+  };
 }
 
-/** Calcula todo el bloque de métricas para un rango [startMs, endMs]. */
-export function computeMetrics(
-  startMs: number,
-  endMs: number,
-  grain: Grain,
-  metricNet: MetricNet,
-): MetricsResult {
-  const perDay: { ms: number; v: number }[] = [];
-  for (let ms = startMs; ms <= endMs; ms += DAY) perDay.push({ ms, v: reachOn(ms) });
-  const daysCount = perDay.length || 1;
-  const total = perDay.reduce((a, p) => a + p.v, 0);
-
-  // delta vs período inmediatamente anterior de la misma duración
-  let prevTotal = 0;
-  for (let i = 1; i <= daysCount; i++) prevTotal += reachOn(startMs - i * DAY);
-  const pct = prevTotal > 0 ? Math.round(((total - prevTotal) / prevTotal) * 100) : 0;
-
-  const nf = NET_INFO[metricNet] ?? NET_INFO.Todas;
-  const totalSel = total * nf.share;
-  const pctSel = metricNet === "Todas" ? pct : Math.round(pct * nf.g);
-
-  const stats: StatCard[] = [
-    { label: "Alcance", value: fmtK(totalSel), delta: sign(pctSel) + "%" },
-    {
-      label: "Nuevos seguidores",
-      value: Math.round(totalSel * 0.09).toLocaleString("en-US"),
-      delta: sign(pctSel) + "%",
-    },
-    {
-      label: "Publicados",
-      value: String(
-        Math.max(
-          1,
-          Math.round(daysCount * 0.8 * (metricNet === "Todas" ? 1 : 0.35 + nf.share)),
-        ),
-      ),
-      delta: "en " + daysCount + " días",
-    },
-    { label: "Aprobación IA", value: "85%", delta: "de propuestas" },
-  ];
-
-  const shares: [string, number, number, string][] = [
-    ["Instagram", 0.5, 0.8, "6,120"],
-    ["TikTok", 0.3, 1.4, "2,480"],
-    ["YouTube", 0.09, 3, "610"],
-    ["LinkedIn", 0.11, 0.7, "1,130"],
-  ];
-  const networkStats: NetworkStat[] = shares.map(([net, sh, f, foll]) => ({
-    net,
-    reach: fmtK(total * sh),
-    delta: sign(Math.round(pct * f)) + "%",
-    foll,
-    selected: metricNet === net,
-  }));
-
-  // --- puntos del gráfico ---
-  let points: { label: string; v: number }[] = [];
-  if (grain === "meses") {
-    const map = new Map<number, { v: number; y: number; m: number }>();
-    perDay.forEach((p) => {
-      const d = new Date(p.ms);
-      const k = d.getFullYear() * 12 + d.getMonth();
-      const cur = map.get(k) || { v: 0, y: d.getFullYear(), m: d.getMonth() };
-      cur.v += p.v;
-      map.set(k, cur);
-    });
-    const keys = [...map.keys()].sort((a, b) => a - b);
-    const multiYear = new Set([...map.values()].map((o) => o.y)).size > 1;
-    points = keys.map((k) => {
-      const o = map.get(k)!;
-      return { label: M_ABBR[o.m] + (multiYear ? " '" + String(o.y).slice(2) : ""), v: o.v };
-    });
-  } else if (daysCount <= 16) {
-    points = perDay.map((p) => ({ label: String(new Date(p.ms).getDate()), v: p.v }));
-  } else {
-    const nb = Math.min(14, daysCount);
-    const size = Math.ceil(daysCount / nb);
-    for (let i = 0; i < daysCount; i += size) {
-      const sl = perDay.slice(i, i + size);
-      const d = new Date(sl[0].ms);
-      points.push({
-        label: d.getDate() + " " + M_ABBR[d.getMonth()],
-        v: sl.reduce((a, p) => a + p.v, 0),
-      });
-    }
+/** La foto más reciente de cada publicación. */
+export function latestPerPost(rows: MetricRow[]): MetricRow[] {
+  const best = new Map<string, MetricRow>();
+  for (const r of rows) {
+    const k = `${r.platform}|${r.external_id ?? r.permalink ?? r.proposal_id ?? r.id}`;
+    const cur = best.get(k);
+    if (!cur || (r.captured_at ?? "") > (cur.captured_at ?? "")) best.set(k, r);
   }
-
-  const vmax = Math.max(...points.map((p) => p.v));
-  const vmin = Math.min(...points.map((p) => p.v));
-  const vspan = vmax - vmin || 1;
-  const bars: Bar[] = points.map((p) => ({
-    h: (16 + 80 * ((p.v - vmin) / vspan)).toFixed(1) + "%",
-    label: p.label,
-    max: p.v === vmax,
-  }));
-
-  const chartUnit = grain === "meses" ? "por mes" : daysCount <= 16 ? "por día" : "agrupado";
-  const netLabel = metricNet === "Todas" ? "Global" : metricNet;
-
-  return { stats, networkStats, bars, chartUnit, netLabel };
+  return [...best.values()];
 }
+
+/** Suma que respeta el vacío: si nadie trae el dato, es null, no 0. */
+function sum(rows: MetricRow[], f: (r: MetricRow) => number | null): number | null {
+  const vals = rows.map(f).filter((v): v is number => v !== null);
+  return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
+}
+
+export function rateOf(saves: number | null, shares: number | null, reach: number | null): number | null {
+  if (!reach || reach <= 0 || (saves === null && shares === null)) return null;
+  return (((saves ?? 0) + (shares ?? 0)) / reach) * 1000;
+}
+
+function group(key: string, title: string, rows: MetricRow[]): MetricGroup {
+  const reach = sum(rows, (r) => r.reach);
+  const saves = sum(rows, (r) => r.saves);
+  const shares = sum(rows, (r) => r.shares);
+  return {
+    key, title, reach, saves, shares,
+    proposalId: rows[0].proposal_id,
+    permalink: rows.find((r) => r.permalink)?.permalink ?? null,
+    nets: [...new Set(rows.map((r) => r.platform))],
+    posts: rows.length,
+    isTest: rows.every((r) => r.is_test),
+    views: sum(rows, (r) => r.views),
+    rate: rateOf(saves, shares, reach),
+  };
+}
+
+/** Primero lo que funciona con alcance suficiente; lo de poco alcance o sin dato, al final. */
+export function rankGroups(list: MetricGroup[]): MetricGroup[] {
+  const tier = (g: MetricGroup) => (g.rate === null ? 2 : (g.reach ?? 0) < MIN_REACH ? 1 : 0);
+  return [...list].sort((a, b) => tier(a) - tier(b) || (b.rate ?? -1) - (a.rate ?? -1) || (b.reach ?? 0) - (a.reach ?? 0));
+}
+
+export interface MetricsView {
+  rows: MetricRow[]; // ya filtradas por red
+  pieces: MetricGroup[];
+  networks: MetricGroup[];
+  total: { reach: number | null; rate: number | null; pieces: number };
+  best: MetricGroup | null;
+  lastCapture: string | null;
+}
+
+/** Arma la pantalla: quita lo descartado, deja la última foto y ordena. */
+export function buildMetrics(all: MetricRow[], proposals: Proposal[], net: MetricNet): MetricsView {
+  const byId = new Map(proposals.map((p) => [p.id, p]));
+  const live = latestPerPost(all).filter((r) => !r.proposal_id || byId.get(r.proposal_id)?.status !== "rejected");
+  const rows = net === "Todas" ? live : live.filter((r) => r.platform === net);
+
+  const perPiece = new Map<string, MetricRow[]>();
+  for (const r of rows) {
+    const k = r.proposal_id ?? `post:${r.platform}:${r.external_id ?? r.permalink ?? r.id}`;
+    perPiece.set(k, [...(perPiece.get(k) ?? []), r]);
+  }
+  const pieces = rankGroups(
+    [...perPiece.entries()].map(([k, list]) => {
+      const p = list[0].proposal_id ? byId.get(list[0].proposal_id) : undefined;
+      const title = (p && pieceTitle(p)) || list[0].notes || list[0].hook || list[0].origin_code || "Publicación sin nombre";
+      return group(k, title, list);
+    }),
+  );
+
+  const perNet = new Map<string, MetricRow[]>();
+  for (const r of live) perNet.set(r.platform, [...(perNet.get(r.platform) ?? []), r]);
+  const networks = rankGroups([...perNet.entries()].map(([k, list]) => group(k, k, list)));
+
+  const reach = sum(rows, (r) => r.reach);
+  const best = pieces.find((g) => g.rate !== null && (g.reach ?? 0) >= MIN_REACH) ?? null;
+  return {
+    rows, pieces, networks, best,
+    total: { reach, rate: rateOf(sum(rows, (r) => r.saves), sum(rows, (r) => r.shares), reach), pieces: pieces.length },
+    lastCapture: rows.map((r) => r.captured_at ?? "").sort().pop() || null,
+  };
+}
+
+const NF = new Intl.NumberFormat("es-CL");
+export const fmtInt = (n: number | null) => (n === null ? "—" : NF.format(Math.round(n)));
+export const fmtRate = (n: number | null) => (n === null ? "—" : n.toLocaleString("es-CL", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));

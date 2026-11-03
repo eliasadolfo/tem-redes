@@ -1,14 +1,13 @@
 // Capa de acceso a datos sobre Supabase.
 // Mapea entre las filas de la DB (tem_*) y los tipos del dominio.
 // Si no hay Supabase configurado, las funciones devuelven null/no-op y la
-// app sigue funcionando con los datos mock locales.
+// app corre en modo demostración.
 
 import { supabase } from "./supabase";
 import type {
   CheckItem,
   ConnectionDetail,
   EditMode,
-  Network,
   Proposal,
   ProposalStatus,
   PlatformTag,
@@ -121,7 +120,10 @@ export function proposalToRow(p: Proposal): ProposalRow {
   };
 }
 
-/** Trae todas las propuestas no rechazadas, ordenadas por día. */
+/**
+ * Trae todas las piezas, ordenadas por día. Incluye las descartadas (`rejected`)
+ * para que Deshacer funcione y Métricas sepa ocultarlas: cada pantalla las filtra.
+ */
 export async function fetchProposals(): Promise<Proposal[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -151,21 +153,22 @@ export async function fetchConnections(): Promise<Record<string, ConnectionDetai
   return out;
 }
 
+/** Filas crudas de `tem_metrics`, lo más reciente primero. `null` = no se pudo leer. */
+export async function fetchMetrics(): Promise<Record<string, unknown>[] | null> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from("tem_metrics").select("*").order("captured_at", { ascending: false });
+  if (error) {
+    console.error("fetchMetrics:", error.message);
+    return null;
+  }
+  return data as Record<string, unknown>[];
+}
+
 /** Actualiza el estado de una propuesta (aprobar / descartar / programar). */
 export async function updateProposalStatus(id: string, status: ProposalStatus): Promise<void> {
   if (!supabase) return;
   const { error } = await supabase.from("tem_proposals").update({ status }).eq("id", id);
   if (error) console.error("updateProposalStatus:", error.message);
-}
-
-/** Cambia la conexión de una red (conectar / desconectar). */
-export async function updateConnection(network: Network, connected: boolean): Promise<void> {
-  if (!supabase) return;
-  const { error } = await supabase
-    .from("tem_connections")
-    .update({ connected })
-    .eq("network", network);
-  if (error) console.error("updateConnection:", error.message);
 }
 
 type EditableKey =
