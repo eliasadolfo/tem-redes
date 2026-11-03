@@ -7,6 +7,8 @@ export type PlatformTag =
   | "Shorts"
   | "YouTube"
   | "in" // LinkedIn
+  | "Threads"
+  | "Facebook"
   | "Newsletter";
 
 /** Redes "canónicas" para filtros de biblioteca / métricas / conexiones. */
@@ -15,7 +17,9 @@ export type Network =
   | "TikTok"
   | "Shorts"
   | "YouTube"
-  | "LinkedIn";
+  | "LinkedIn"
+  | "Threads"
+  | "Facebook";
 
 /**
  * `status` se mantiene por compatibilidad con la v1:
@@ -28,7 +32,7 @@ export type Stage = "idea" | "guion" | "grabar" | "editar" | "listo" | "publicad
 
 export interface HeadlineLine {
   pre: string;
-  key: string; // la palabra clave va en naranja
+  key: string; // la palabra clave va en naranja, con el mismo peso
   post: string;
 }
 
@@ -116,28 +120,12 @@ export interface ConnectionDetail {
   error: string | null;
 }
 
-/** Estilo de variante del card 9:16. */
+/** Estilo de la pieza: lienzo, tarjeta flotando y texto (nunca cambia con el tema de la app). */
 export interface Variant {
-  bg: string;
-  fg: string;
-}
-
-export interface GalleryItem {
-  eyebrow: string;
-  pre: string;
-  key: string;
-  post: string;
-  bg: string;
-  fg: string;
-  net: Network;
-  platStr: string;
-  reach: string;
-}
-
-export interface ThemeRow {
   name: string;
-  pct: string;
-  note: string;
+  bg: string;
+  card: string;
+  fg: string;
 }
 
 export interface ChatMessage {
@@ -152,10 +140,8 @@ export type DesktopView =
   | "calendar"
   | "library"
   | "metrics"
-  | "newsletter"
   | "settings";
 
 export type MobileTab = "inicio" | "grabar" | "semana" | "metricas" | "perfil";
 
-export type MetricNet = "Todas" | "Instagram" | "TikTok" | "YouTube" | "LinkedIn";
-export type Grain = "días" | "meses";
+export type MetricNet = "Todas" | Exclude<Network, "Shorts">;

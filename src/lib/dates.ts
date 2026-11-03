@@ -13,7 +13,7 @@ export const M_FULL = [
 ];
 /** Encabezados del popover: la semana empieza en lunes. */
 export const WEEKDAY_HEADERS = ["lu", "ma", "mi", "ju", "vi", "sá", "do"];
-export const WK_ABBR = ["LUN", "MAR", "MIÉ", "JUE", "VIE"];
+export const WK_ABBR = ["Lun", "Mar", "Mié", "Jue", "Vie"];
 export const DAY_NAMES_FULL = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
 /** Mediodía local del día que contiene `ms`. */

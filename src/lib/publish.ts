@@ -1,7 +1,9 @@
-// Publicación real en redes vía n8n + Upload-Post (las llaves viven en n8n).
+// Publicación real en redes vía n8n (las llaves viven en n8n, nunca en la app).
 // Contrato del webhook `tem-redes/publicar`: body { token, action, ... } → { ok, ... }.
 import { getToken } from "./ai";
-import type { Network, PlatformTag } from "../types";
+import type { Network, PlatformTag, PostResult } from "../types";
+
+export type { PostResult };
 
 const PUBLICAR_URL = import.meta.env.VITE_N8N_PUBLICAR_URL as string | undefined;
 
@@ -13,20 +15,6 @@ export interface ConnectionInfo {
   reauth?: boolean;
 }
 
-export interface PostResult {
-  ok: boolean;
-  at: string;
-  url?: string;
-  post_id?: string;
-  publish_id?: string;
-  job_id?: string;
-  scheduled?: boolean;
-  scheduled_date?: string | null;
-  pending?: boolean;
-  request_id?: string;
-  error?: string;
-}
-
 /** Red de la app → nombre de red canónico (lo que entiende el robot). */
 export const TAG_TO_NETWORK: Record<PlatformTag, Network | null> = {
   IG: "Instagram",
@@ -34,16 +22,20 @@ export const TAG_TO_NETWORK: Record<PlatformTag, Network | null> = {
   Shorts: "YouTube",
   YouTube: "YouTube",
   in: "LinkedIn",
+  Threads: "Threads",
+  Facebook: "Facebook",
   Newsletter: null,
 };
 
-/** Clave de Upload-Post por red (coincide con `posts` en la base). */
+/** Clave de cada red en `tem_proposals.posts`. */
 export const NETWORK_KEY: Record<Network, string> = {
   Instagram: "instagram",
   TikTok: "tiktok",
   Shorts: "youtube",
   YouTube: "youtube",
   LinkedIn: "linkedin",
+  Threads: "threads",
+  Facebook: "facebook",
 };
 
 async function call<T>(body: Record<string, unknown>, timeoutMs = 600_000): Promise<T> {
@@ -72,7 +64,7 @@ async function call<T>(body: Record<string, unknown>, timeoutMs = 600_000): Prom
   }
 }
 
-/** Estado real de cada red (lo lee de Upload-Post y lo guarda en tem_connections). */
+/** Estado real de cada red (el robot lo revisa y lo guarda en tem_connections). */
 export function fetchConnectionStatus(): Promise<{ ok: boolean; needsProfile: boolean; plan: string | null; connections: Record<Network, ConnectionInfo> }> {
   return call({ action: "estado" }, 60_000);
 }
@@ -83,7 +75,15 @@ export function startConnect(network: Network): Promise<{ ok: boolean; authorize
   return call({ action: "conectar", network, redirect_url }, 60_000);
 }
 
-/** Publica (o programa si `when` es una fecha futura ISO) una pieza en sus redes. */
-export function publishPiece(id: string, networks: Network[], when?: string | null): Promise<{ ok: boolean; posts: Record<string, PostResult>; published: boolean; scheduled: boolean }> {
-  return call({ action: "publicar", id, networks, when: when ?? null });
+/**
+ * Publica (o programa si `when` es una fecha futura ISO) una pieza en sus redes.
+ * `trial: true` pide reel de prueba: Instagram lo muestra solo a quienes no te siguen.
+ */
+export function publishPiece(
+  id: string,
+  networks: Network[],
+  when?: string | null,
+  opts?: { trial?: boolean },
+): Promise<{ ok: boolean; posts: Record<string, PostResult>; published: boolean; scheduled: boolean }> {
+  return call({ action: "publicar", id, networks, when: when ?? null, ...(opts?.trial ? { trial: true } : {}) });
 }

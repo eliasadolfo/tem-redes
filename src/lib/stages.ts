@@ -2,7 +2,7 @@
 // avanzar y valores por defecto. Fuente única para escritorio y móvil.
 
 import type { CheckItem, HeadlineLine, Proposal, ProposalStatus, Script, Stage } from "../types";
-import { deliveryFor, guideFor } from "./formatos";
+import { deliveryFor, guideFor, pieceFormat } from "./formatos";
 
 export const STAGES: Stage[] = ["idea", "guion", "grabar", "editar", "listo", "publicado"];
 
@@ -31,7 +31,7 @@ export const STAGE_REQUIREMENT: Record<Stage, string> = {
   idea: "",
   guion: "título y por qué importa",
   grabar: "gancho, desarrollo y al menos una toma",
-  editar: "toda la entrega al editor marcada (bruto, tomas, textos, modo de edición)",
+  editar: "toda la entrega al editor marcada",
   listo: "link del video final y caption",
   publicado: "al menos una red activa",
 };
@@ -62,27 +62,14 @@ export function defaultStage(status: ProposalStatus): Stage {
 
 export const EMPTY_SCRIPT: Script = { hook: "", body: "", cta: "", duration_s: null, format: "Reel" };
 
-export const SCRIPT_FORMATS = ["Reel", "Short", "Video largo", "Post", "Carrusel", "Newsletter"];
+export const SCRIPT_FORMATS = ["Reel", "Short", "Historia", "Video largo", "Post", "Carrusel", "Newsletter"];
 
 /** Duraciones típicas (segundos) para el selector del guion (H05: selectores, no texto libre). */
-export const DURATIONS_S = [15, 30, 45, 60, 90, 180, 300, 600];
+export const DURATIONS_S = [10, 15, 30, 45, 60, 90, 180, 300, 600];
 
 export function newItem(text: string): CheckItem {
   return { id: Math.random().toString(36).slice(2, 10), text, done: false };
 }
-
-/** Checklist de grabación por defecto. */
-export function defaultChecklist(): CheckItem[] {
-  return ["Luz de frente", "Micrófono probado", "Encuadre a la altura de los ojos", "Batería y espacio", "Fondo limpio"].map(newItem);
-}
-
-/** Plantillas de ganchos a la vista (H06: reconocer antes que recordar). */
-export const HOOK_TEMPLATES = [
-  "Si tienes una marca y no has hecho esto, te lo van a quitar.",
-  "El error de $3.500 que comete el 80 % de los emprendedores.",
-  "Nadie te lo dice cuando emprendes: …",
-  "Hoy me llegó un caso que lo explica todo.",
-];
 
 /** Plantillas de tomas típicas de un Reel TEM. */
 export const SHOT_TEMPLATES = [
@@ -107,7 +94,9 @@ export function parseLine(text: string): HeadlineLine {
 export function scriptText(p: Proposal): string {
   const s = p.script;
   if (!s) return "";
-  return [s.hook, s.body, s.cta].filter((t) => t.trim()).join("\n\n");
+  // Los ganchos alternativos se leen seguidos, con aire entre uno y otro.
+  const hook = s.hook.replace(/\n+(?=GANCHO [A-Z]:)/g, "\n\n");
+  return [hook, s.body, s.cta].filter((t) => t.trim()).join("\n\n");
 }
 
 /**
@@ -139,7 +128,7 @@ function missingForStep(p: Proposal, target: Stage, activePlatforms?: number): s
     }
     case "grabar": {
       if (!p.script?.hook.trim()) return "Falta el gancho del guion.";
-      if (!p.script?.body.trim()) return "Falta el desarrollo del guion.";
+      if (!p.script?.body.trim() && guideFor(pieceFormat(p)).key !== "historia") return "Falta el desarrollo del guion.";
       if (!p.shots || p.shots.length === 0) return "Añade al menos una toma.";
       return null;
     }
@@ -166,8 +155,9 @@ export function stageSummary(p: Proposal, stage: Stage): string {
     case "guion": {
       const s = p.script;
       if (!s || !s.hook) return "Sin guion todavía";
-      const dur = s.duration_s ? ` · ${s.duration_s} s` : "";
-      return `${s.format}${dur} · ${(p.shots ?? []).length} tomas`;
+      const dur = s.duration_s ? ` · ${s.duration_s < 120 ? `${s.duration_s} s` : `${Math.round(s.duration_s / 60)} min`}` : "";
+      const n = (p.shots ?? []).length;
+      return `${s.format}${dur} · ${n === 1 ? "1 toma" : `${n} tomas`}`;
     }
     case "grabar": {
       const d = deliveryStatus(p);
@@ -200,20 +190,22 @@ export interface DeliveryItem extends CheckItem {
  * tomas, texto en pantalla, bruto, modo) + lo manual del formato (`p.delivery`).
  */
 export function deliveryStatus(p: Proposal): DeliveryItem[] {
-  const g = guideFor(p.script?.format);
+  const g = guideFor(pieceFormat(p));
   const shots = p.shots ?? [];
   const done = shots.filter((s) => s.done).length;
   const auto: DeliveryItem[] = [];
   const hook = (p.script?.hook ?? "").trim();
   const body = (p.script?.body ?? "").trim();
-  auto.push({ id: "auto_script", text: "Guion final: gancho y desarrollo", done: Boolean(hook && body), auto: true });
+  // Una historia puede ser una sola frase: basta con el gancho.
+  const bodyOk = Boolean(body) || g.key === "historia";
+  auto.push({ id: "auto_script", text: g.key === "historia" ? "Guion final" : "Guion final: gancho y desarrollo", done: Boolean(hook && bodyOk), auto: true });
   if (g.isVideo) {
     auto.push({ id: "auto_shots", text: shots.length ? `Todas las tomas grabadas (${done} de ${shots.length})` : "Lista de tomas", done: shots.length > 0 && done === shots.length, auto: true });
     auto.push({ id: "auto_screen", text: "Texto en pantalla anotado en cada toma", done: shots.length > 0 && shots.every((s) => (s.screen ?? "").trim().length > 0), auto: true });
-    auto.push({ id: "auto_mode", text: "Modo de edición elegido (A, B o C)", done: Boolean(p.edit_mode), auto: true });
+    if (g.editMode) auto.push({ id: "auto_mode", text: "Modo de edición elegido (A, B o C)", done: Boolean(p.edit_mode), auto: true });
   }
   auto.push({ id: "auto_raw", text: g.isVideo ? "Link del bruto" : "Link del material (fotos, captura o nota)", done: (p.raw_url ?? "").trim().length > 0, auto: true });
-  const manual = (p.delivery?.length ? p.delivery : deliveryFor(p.script?.format)).map((d) => ({ ...d, auto: false }));
+  const manual = (p.delivery?.length ? p.delivery : deliveryFor(pieceFormat(p))).map((d) => ({ ...d, auto: false }));
   return [...auto, ...manual];
 }
 

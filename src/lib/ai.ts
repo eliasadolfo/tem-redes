@@ -200,7 +200,7 @@ export interface ScriptOut { hook: string; body: string; cta: string; duration_s
 /** Guion completo a partir de la idea y el formato → { hook, body, cta, duration_s, format, shots }. */
 export async function aiScript(p: Proposal): Promise<ScriptOut> {
   if (DEMO) return demoScript(p);
-  const fmt = p.script?.format ?? "Reel";
+  const fmt = p.script?.format ?? p.type ?? "Reel";
   const dur = p.script?.duration_s;
   const { json } = await ask(
     [
@@ -326,7 +326,7 @@ function demoScript(p: Proposal): ScriptOut {
     body: "Primero: el problema real, con un caso.\nSegundo: el dato que casi nadie conoce.\nTercero: qué hacer hoy mismo.",
     cta: "Si tienes una marca, escríbeme y la revisamos juntos.",
     duration_s: p.script?.duration_s ?? 30,
-    format: p.script?.format ?? "Reel",
+    format: p.script?.format ?? p.type ?? "Reel",
     shots: ["Gancho a cámara, plano medio", "Desarrollo con texto en pantalla", "B-roll: pantalla del formulario", "Cierre a cámara con llamado"],
   };
 }

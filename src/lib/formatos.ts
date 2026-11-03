@@ -4,7 +4,7 @@
 
 import type { CheckItem, EditMode } from "../types";
 
-export type FormatKey = "reel" | "video_largo" | "carrusel" | "post" | "newsletter";
+export type FormatKey = "reel" | "historia" | "video_largo" | "carrusel" | "post" | "newsletter";
 
 /** Zona segura en px del lienzo de entrega (nada importante ahí). */
 export interface SafeZones { top: number; bottom: number; left: number; right: number }
@@ -42,6 +42,8 @@ export interface FormatGuide {
   thumbnail?: string;
   variants?: string[];
   isVideo: boolean;
+  /** Se edita con modo A/B/C. Una historia se publica tal cual: no lleva modo. */
+  editMode: boolean;
 }
 
 export const EDIT_MODES: { key: EditMode; name: string; help: string }[] = [
@@ -74,7 +76,7 @@ const REEL: FormatGuide = {
   audio: "Micrófono del teléfono a menos de 40 cm, sin viento ni ventilador. 5 s de silencio de sala al inicio.",
   light: "Lámpara o ventana de frente o a 45° del rostro. Nunca a contraluz.",
   pace: "Gancho hablado en los primeros 2-3 s. Un punto cada 8-10 s. Si te trabas, sigue y repite la frase; no reinicies la toma.",
-  onScreen: "Lo pone el editor: subtítulo de 1-3 palabras bajo la cara, gancho detrás de la cabeza los primeros 3-4 s. Tú anotas qué texto va en cada toma.",
+  onScreen: "Lo pone el editor: tarjeta blanca de máximo 12 palabras y subtítulo de 1-3 palabras bajo la cara. Tú anotas qué texto va en cada toma.",
   before: [
     "Guion y los 3 ganchos abiertos en OTRO dispositivo",
     "Modo avión, No molestar, 4 GB libres, lente limpio",
@@ -95,7 +97,7 @@ const REEL: FormatGuide = {
     "Bruto original por AirDrop (no Telegram ni WhatsApp)",
     "Grabación de pantalla aparte si el guion muestra una herramienta",
     "Guion con los 3 ganchos y qué gancho va en cada toma",
-    "Título exacto (máx. 7 palabras) y su palabra en naranja",
+    "Título exacto (máx. 12 palabras) y su palabra en naranja",
     "Prop real de los primeros 2 s (correo, captura, objeto)",
     "Fuente de cada cifra que se dice",
   ],
@@ -109,16 +111,59 @@ const REEL: FormatGuide = {
     "Mandar el video por Telegram o WhatsApp",
   ],
   layers: [
-    { name: "Eyebrow", y: [15.5, 17], x: [8, 92], style: "Montserrat 800 · 28 px · mayúsculas naranja", when: "junto al título" },
-    { name: "Título", y: [17, 30], x: [8, 92], style: "Montserrat 900 · 64 px · blanco sobre caja #111 · una palabra naranja · máx. 7 palabras", when: "primeros 3-5 s" },
+    { name: "Título", y: [17, 30], x: [9, 91], style: "Tarjeta blanca · Inter 500 · 64 px · hasta 3 palabras en naranja, mismo peso · máx. 12 palabras", when: "primeros 3-5 s" },
     { name: "Inserto", y: [17, 45], x: [14.5, 85.5], style: "Tarjeta blanca de 750 px, una idea y una cifra, uno a la vez", when: "en la palabra que nombra la cosa, 1,5-3 s" },
     { name: "Cara", y: [32, 82], x: [0, 100], style: "Plano completo con aire sobre la cabeza", when: "siempre; nunca fuera más de 3 s" },
-    { name: "Subtítulos", y: [60, 68], x: [8, 92], style: "Montserrat 800 · 62 px · blanco con sombra · 1-3 palabras", when: "todo el video" },
-    { name: "Cierre", y: [30, 60], x: [14.5, 85.5], style: "Tarjeta #111: eyebrow naranja + «Comenta X» + @tuescuelademarcas", when: "últimos 4-6 s" },
+    { name: "Subtítulos", y: [60, 68], x: [8, 92], style: "Inter 500 · 64 px · blanco con sombra suave · 1-3 palabras", when: "todo el video" },
+    { name: "Cierre", y: [30, 60], x: [14.5, 85.5], style: "Tarjeta negra: «Comenta X» + @tuescuelademarcas abajo en gris", when: "últimos 4-6 s" },
   ],
-  thumbnail: "Portada 9:16: cara en la mitad inferior, título de 3-5 palabras con una en naranja dentro del recuadro 4:5 central.",
+  thumbnail: "Portada 9:16: cara en la mitad inferior, título de 3-5 palabras con una en naranja, dentro del recuadro 4:5 central.",
   variants: ["Blanca", "Negra", "Azul"],
   isVideo: true,
+  editMode: true,
+};
+
+const HISTORIA: FormatGuide = {
+  key: "historia",
+  name: "Historia de Instagram",
+  orientation: "vertical",
+  aspect: "9:16",
+  canvas: { w: 1080, h: 1920 },
+  resolution: "Entrega 1080×1920 · grabar vertical a 30 fps",
+  duration: { min: 5, ideal: 10, max: 15 },
+  frame: "Selfie o plano fijo a la altura de los ojos, cara al centro. Sin producción: se graba donde estás.",
+  safe: { top: 250, bottom: 340, left: 60, right: 60 },
+  audio: "Micrófono del teléfono a menos de 40 cm, sin viento. Mucha gente la ve sin sonido: la idea tiene que leerse en pantalla.",
+  light: "Luz de frente o ventana a 45°. Nunca a contraluz.",
+  pace: "Una sola idea en 10 segundos, dicha de una vez. Si no cabe, es un Reel.",
+  onScreen: "Una frase corta en tarjeta blanca, dentro de la zona segura. Tú anotas el texto en cada toma.",
+  before: [
+    "Frase de la historia a mano, en una línea",
+    "Encuadre fijo a la altura de los ojos",
+    "Luz de frente; sin papeles ni datos de terceros a la vista",
+  ],
+  during: [
+    "Mirar al lente y decirlo de una vez",
+    "Si te trabas, repite la historia completa: dura 10 segundos",
+  ],
+  deliver: [
+    "Bruto original por AirDrop (no Telegram ni WhatsApp)",
+    "Fuente de la cifra, o indicar que no lleva",
+  ],
+  fileName: "AAAA-MM-DD_<pieza>_toma<N>.mov",
+  avoid: [
+    "Más de una idea",
+    "Texto en los primeros 250 px o los últimos 340 px",
+    "Filtros o modo belleza",
+    "Datos de clientes o de terceros a la vista",
+  ],
+  layers: [
+    { name: "Cara", y: [13, 82], x: [0, 100], style: "Selfie o plano fijo, cara libre de texto", when: "toda la historia" },
+    { name: "Tarjeta", y: [52, 72], x: [9, 91], style: "Tarjeta blanca · Inter 500 · 64 px · máx. 12 palabras · handle 30 px en gris", when: "toda la historia" },
+  ],
+  variants: ["Blanca", "Negra", "Azul"],
+  isVideo: true,
+  editMode: false,
 };
 
 const VIDEO_LARGO: FormatGuide = {
@@ -168,16 +213,17 @@ const VIDEO_LARGO: FormatGuide = {
     "Prometer en el gancho algo que el video no entrega",
   ],
   layers: [
-    { name: "Capítulo", y: [8, 12], x: [5, 40], style: "Montserrat 800 · 26 px · mayúsculas naranja · número + nombre", when: "primeros 3 s de cada capítulo" },
+    { name: "Capítulo", y: [8, 12], x: [5, 40], style: "Inter 500 · 30 px · número + nombre, en sentence case", when: "primeros 3 s de cada capítulo" },
     { name: "Cara", y: [0, 100], x: [0, 100], style: "Regla de tercios, luz cálida de un lado, fondo oscuro", when: "siempre" },
-    { name: "Cifra", y: [20, 80], x: [55, 95], style: "Tarjeta blanca, cifra Montserrat 900 naranja + una línea", when: "al decir la cifra, 3-5 s" },
-    { name: "Título", y: [72, 88], x: [5, 60], style: "Montserrat 900 · 72 px · blanco sobre caja #111 · palabra naranja", when: "primeros 5 s" },
-    { name: "Subtítulos", y: [84, 92], x: [15, 85], style: "Montserrat 600 · 44 px · blanco con sombra · máx. 7 palabras", when: "si no hay música" },
-    { name: "Logo", y: [88, 95], x: [90, 96], style: "Logo TEM 80 px, blanco al 60 %", when: "todo el video" },
+    { name: "Cifra", y: [20, 80], x: [55, 95], style: "Tarjeta blanca, cifra Inter 500 + una línea", when: "al decir la cifra, 3-5 s" },
+    { name: "Título", y: [72, 88], x: [5, 60], style: "Tarjeta blanca · Inter 500 · 64 px · hasta 3 palabras en naranja, mismo peso", when: "primeros 5 s" },
+    { name: "Subtítulos", y: [84, 92], x: [15, 85], style: "Inter 500 · 38 px · blanco con sombra suave · máx. 7 palabras", when: "si no hay música" },
+    { name: "Logo", y: [88, 95], x: [90, 96], style: "Logo TEM 80 px, blanco, sin alterar", when: "todo el video" },
   ],
-  thumbnail: "1280×720: cara ocupando la mitad derecha, máx. 3 palabras en Montserrat 900 naranja sobre #111, sin logo.",
+  thumbnail: "1280×720, máx. 3 palabras: cifra de 300 px + palabra de 60 px en Inter 500, a la izquierda, con la cara en la mitad derecha. Sin firma ni logo.",
   variants: ["Blanca", "Negra", "Azul"],
   isVideo: true,
+  editMode: true,
 };
 
 const CARRUSEL: FormatGuide = {
@@ -190,11 +236,11 @@ const CARRUSEL: FormatGuide = {
   duration: null,
   extent: "6-8 láminas, una idea o una historia; una foto real por lámina",
   frame: "Fotos reales de Elías en vertical con la cara libre del texto: aire arriba o abajo según dónde irá el título. Mismo fondo y luz entre láminas.",
-  safe: { top: 72, bottom: 72, left: 72, right: 72 },
+  safe: { top: 96, bottom: 96, left: 96, right: 96 },
   audio: "No aplica.",
   light: "Luz natural o la lámpara cálida real, sin flash ni filtros que cambien la piel.",
   pace: "Lámina 1 = gancho; láminas 2 a N-1 = un paso o dato por lámina; última = cierre con llamado a guardar o compartir.",
-  onScreen: "Lo arma el editor: texto blanco sobre degradado oscuro, 72 px de margen. Tú entregas el texto y la cifra real de cada lámina.",
+  onScreen: "Lo arma el editor: tarjeta blanca con título de 72 px y texto de 38 px, márgenes de 96 px. Tú entregas el texto y la cifra real de cada lámina.",
   before: [
     "Historia o lista cerrada con su dato real por lámina",
     "Una foto real por lámina identificada (qué momento cuenta)",
@@ -208,8 +254,8 @@ const CARRUSEL: FormatGuide = {
   ],
   deliver: [
     "Fotos originales por AirDrop (AAAA-MM-DD_<pieza>_lamNN)",
-    "Texto final de cada lámina, en orden (máx. 20 palabras)",
-    "Gancho de la lámina 1 (máx. 7 palabras) y su palabra en naranja",
+    "Texto final de cada lámina, en orden (título de 10 palabras + párrafo de 25)",
+    "Gancho de la lámina 1 (máx. 10 palabras) y su palabra en naranja",
     "Pregunta o puerta de la última lámina («Comenta X»)",
     "Fuente de cada cifra",
   ],
@@ -222,15 +268,13 @@ const CARRUSEL: FormatGuide = {
   ],
   layers: [
     { name: "Foto", y: [0, 100], x: [0, 100], style: "Foto real a sangre, una distinta por lámina, cara libre de texto", when: "láminas 1 a N-1" },
-    { name: "Contador", y: [4, 7], x: [80, 93], style: "Montserrat 800 · 24 px · blanco · 2/7", when: "láminas 2 a N" },
-    { name: "Degradado", y: [45, 100], x: [0, 100], style: "De #111 al 85 % a transparente, bajo el texto", when: "láminas con foto" },
-    { name: "Eyebrow", y: [58, 62], x: [7, 93], style: "Montserrat 800 · 26 px · mayúsculas naranja" },
-    { name: "Titular", y: [62, 88], x: [7, 93], style: "Lámina 1: Montserrat 900 · 88 px · blanco · máx. 7 palabras, una naranja. Resto: 500 con frase clave en 800", when: "una idea por lámina" },
-    { name: "Handle", y: [93, 96], x: [7, 50], style: "@tuescuelademarcas · 24 px · blanco", when: "primera y última lámina" },
+    { name: "Tarjeta", y: [52, 90], x: [9, 91], style: "Tarjeta blanca · título Inter 500 · 72 px + texto Inter 400 · 38 px, a la izquierda", when: "una idea por lámina" },
+    { name: "Firma", y: [83, 87], x: [15, 60], style: "Montserrat 500 · 26 px · @tuescuelademarcas en gris, dentro de la tarjeta", when: "primera y última lámina" },
   ],
-  thumbnail: "La lámina 1 es la portada: gancho de máx. 7 palabras, una en naranja, foto real de Elías.",
-  variants: ["Foto", "Blanca", "Negra", "Azul"],
+  thumbnail: "La lámina 1 es la portada: gancho de máx. 10 palabras, hasta 3 en naranja, foto real de Elías.",
+  variants: ["Blanca", "Negra", "Azul"],
   isVideo: false,
+  editMode: false,
 };
 
 const POST: FormatGuide = {
@@ -242,8 +286,8 @@ const POST: FormatGuide = {
   resolution: "1080×1350 (PNG o JPG)",
   duration: null,
   extent: "1 imagen y un caption; Instagram hasta 150 palabras, LinkedIn 1.200-1.500 caracteres",
-  frame: "Una foto real o una captura real, un solo punto focal, la cara fuera de la zona del texto. Margen de 72 px.",
-  safe: { top: 72, bottom: 72, left: 72, right: 72 },
+  frame: "Una foto real o una captura real, un solo punto focal, la cara fuera de la zona del texto. Margen de 96 px.",
+  safe: { top: 96, bottom: 96, left: 96, right: 96 },
   audio: "No aplica.",
   light: "Luz natural o lámpara cálida real. Capturas de pantalla en alta resolución.",
   pace: "Una sola idea, legible en 3 segundos sin abrir el caption.",
@@ -259,7 +303,7 @@ const POST: FormatGuide = {
   ],
   deliver: [
     "Imagen original por AirDrop (AAAA-MM-DD_<pieza>_img)",
-    "Titular exacto (máx. 7 palabras), su palabra en naranja y el eyebrow",
+    "Titular exacto (máx. 10 palabras) y su palabra en naranja",
     "Fuente de la cifra, o indicar que no lleva",
   ],
   fileName: "AAAA-MM-DD_<pieza>_img.jpg",
@@ -270,15 +314,14 @@ const POST: FormatGuide = {
     "Cifras sin fuente primaria",
   ],
   layers: [
-    { name: "Eyebrow", y: [10, 14], x: [8, 92], style: "Montserrat 800 · 26 px · mayúsculas naranja" },
-    { name: "Titular", y: [20, 70], x: [8, 92], style: "Montserrat 900 · 96 px · #111 sobre claro o blanco sobre oscuro · una palabra naranja · máx. 7 palabras", when: "una sola idea" },
-    { name: "Cifra", y: [70, 82], x: [8, 92], style: "Montserrat 900 naranja · 120 px · con una línea de apoyo", when: "solo si cambia lo que el lector hace" },
-    { name: "Handle", y: [91, 95], x: [8, 60], style: "@tuescuelademarcas · 24 px · #111 o blanco según fondo" },
-    { name: "Logo", y: [90, 95], x: [84, 92], style: "Logo TEM 64 px" },
+    { name: "Titular", y: [20, 62], x: [9, 91], style: "Tarjeta blanca · Inter 500 · 72 px · hasta 3 palabras en naranja, mismo peso · máx. 10 palabras", when: "una sola idea" },
+    { name: "Texto", y: [62, 80], x: [9, 91], style: "Inter 400 · 38 px en gris · con una línea de apoyo", when: "solo si cambia lo que el lector hace" },
+    { name: "Firma", y: [84, 89], x: [9, 60], style: "Montserrat 500 · 26 px · @tuescuelademarcas en gris" },
   ],
   thumbnail: "En el feed se recorta a 4:5 en la cuadrícula 3:4: titular y rostro dentro del 80 % central.",
   variants: ["Blanca", "Negra", "Azul"],
   isVideo: false,
+  editMode: false,
 };
 
 const NEWSLETTER: FormatGuide = {
@@ -319,20 +362,23 @@ const NEWSLETTER: FormatGuide = {
   ],
   layers: [],
   isVideo: false,
+  editMode: false,
 };
 
 export const FORMAT_GUIDES: Record<FormatKey, FormatGuide> = {
   reel: REEL,
+  historia: HISTORIA,
   video_largo: VIDEO_LARGO,
   carrusel: CARRUSEL,
   post: POST,
   newsletter: NEWSLETTER,
 };
 
-/** Del formato del guion ("Reel", "Short", "Video largo"…) a la guía. */
+/** Del formato del guion ("Reel", "Short", "Historia", "Video largo"…) a la guía. */
 export function formatKey(format: string | undefined): FormatKey {
   const f = (format ?? "").toLowerCase();
   if (f.includes("largo") || f === "video" || f.includes("youtube")) return "video_largo";
+  if (f.includes("histori")) return "historia";
   if (f.includes("carrusel")) return "carrusel";
   if (f.includes("post")) return "post";
   if (f.includes("news")) return "newsletter";
@@ -341,6 +387,11 @@ export function formatKey(format: string | undefined): FormatKey {
 
 export function guideFor(format: string | undefined): FormatGuide {
   return FORMAT_GUIDES[formatKey(format)];
+}
+
+/** Formato de una pieza: el del guion, o su tipo si todavía no tiene guion. */
+export function pieceFormat(p: { type: string; script?: { format: string } }): string {
+  return p.script?.format || p.type;
 }
 
 export function durationLabel(g: FormatGuide): string {
