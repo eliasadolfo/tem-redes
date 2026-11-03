@@ -237,9 +237,9 @@ pantalla; navegación activa en tinta. Modo oscuro según el sistema; las piezas
 ## Pendiente (próximas fases)
 
 - Motor de edición (ffmpeg, estilo TEM) en el VPS, disparado desde la app con el bruto y las instrucciones.
-- OAuth por red (Instagram Graph, TikTok Display, YouTube Data, LinkedIn Marketing) + métricas reales en Publicado.
-- Programación/publicación real (hoy "Listo" solo programa; publicas tú).
-- Persistir el historial del chat del copiloto y el envío de newsletter.
+- Programar en lote hacia las redes: hoy el lote asigna redes, día y hora; la subida va pieza por pieza.
+- Persistir el historial del chat del copiloto.
+- Newsletter: la pantalla simulada se quitó; volverá cuando lea `tem_newsletter_drafts` y envíe de verdad.
 - Exportar video (hoy solo imagen PNG).
 
 ## Origen del diseño
