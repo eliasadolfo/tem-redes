@@ -47,7 +47,7 @@ en `src/lib/stages.ts` (`missingFor`, `nextStage`, `stageSummary`, plantillas).
 - **Calendario / Semana**: solo lo que está en Listo o Publicado.
 - **Móvil**: Inicio = resumen del tablero + idea rápida + "Qué toca hoy" (sale hoy, por grabar,
   por editar); tab Grabar = sesión de grabación; el sheet sigue la misma lógica por etapa.
-- Biblioteca, Métricas, Newsletter, Perfil: sin cambios funcionales.
+- Biblioteca: lo publicado de verdad. Métricas: datos reales de `tem_metrics`. Perfil: redes conectadas.
 
 ### Campos de `tem_proposals` (v2)
 
@@ -81,29 +81,36 @@ Todos corren por `runAi` en el store: estado visible (`aiBusy`), mensaje en el c
 `ajustar-pieza`) siguen funcionando: el copiloto ajusta titular/etiqueta/caption/hashtags, y
 si no existe `VITE_N8N_IA_URL` "Generar ideas" usa el generador de propuestas.
 
-### Publicar en las redes (Upload-Post vía n8n)
+### Publicar en las redes
 
-La app no guarda llaves de ninguna red. Publica a través del workflow n8n
-`TEM Redes — Publicar en redes (Upload-Post, webhook)` (id `WzLre4BUx9iEnq4h`,
-path `tem-redes/publicar`), que usa [Upload-Post](https://www.upload-post.com) como
-conector: ellos tienen las apps aprobadas de Instagram, TikTok, YouTube y LinkedIn;
-Elías conecta cada red una vez (botón **Conectar** en Perfil → autorización oficial de
-la red → vuelve a la app con `?conectada=Red`). Contrato (`src/lib/publish.ts`), body
-como `text/plain` con `{ token, action, … }`:
+La app no guarda llaves de ninguna red. Publica a través del workflow n8n del webhook
+`tem-redes/publicar`. Elías conecta cada red una vez (botón **Conectar** en Perfil →
+autorización oficial de la red → vuelve a la app con `?conectada=Red`). Redes: Instagram,
+Facebook, Threads, TikTok, YouTube (y Shorts) y LinkedIn. Contrato (`src/lib/publish.ts`),
+body como `text/plain` con `{ token, action, … }`:
 
 | action | body | respuesta |
 |---|---|---|
-| `estado` | — | `{ connections: { Instagram: {connected, handle}, … } }`; crea el perfil `tem` si no existe y actualiza `tem_connections` |
-| `conectar` | `network`, `redirect_url` | `{ authorize_url }` (vale 15 min) |
-| `publicar` | `id`, `networks[]`, `when?` (ISO futuro = programar) | `{ posts: { instagram: {ok,url,error…} }, published, scheduled }`; escribe `tem_proposals.posts` y, si publicó, `stage = publicado` |
+| `estado` | — | `{ connections: { Instagram: {connected, handle}, … } }`; actualiza `tem_connections` |
+| `conectar` | `network`, `redirect_url` | `{ authorize_url }` |
+| `publicar` | `id`, `networks[]`, `when?` (ISO futuro = programar), `trial?` (`true` = reel de prueba en Instagram) | `{ posts: { instagram: {ok,url,error…}, threads: …, facebook: … }, published, scheduled }`; escribe `tem_proposals.posts` y, si publicó, `stage = publicado` |
 
-El video sale de `final_url`: si es un link de Drive, n8n lo descarga con la credencial
-"Google Drive TEM" y lo sube como archivo; si no, manda la URL pública. Captions:
-Instagram/TikTok usan el caption como título; YouTube/LinkedIn usan el titular + caption.
-Pendiente de Elías: cuenta Upload-Post (plan Free: 10 publicaciones/mes, sin TikTok;
-Basic USD 16/mes anual con TikTok) y credencial n8n `httpHeaderAuth`
-"Upload-Post TEM" (header `Authorization: Apikey …`) asignada a los 4 nodos `UP ·`.
-Las fotos (post, carrusel) y texto solo (LinkedIn) todavía no se publican por aquí.
+`networks` usa los nombres `Instagram`, `Facebook`, `Threads`, `TikTok`, `YouTube` y
+`LinkedIn`; las claves de `posts` son las mismas en minúscula. El video sale de `final_url`.
+
+### Métricas
+
+La pantalla lee `tem_metrics` (`select *`, tolera columnas nuevas): se queda con la foto más
+reciente de cada publicación y agrupa por pieza (`proposal_id`, o la publicación si no está
+ligada) y por red. Orden: guardados + compartidos por 1.000 de alcance; lo que tiene menos de
+100 de alcance va al final porque su tasa no dice mucho. Sin datos, estado vacío: la app no
+inventa ni estima nada. Lo descartado (`status = rejected`) no aparece.
+
+### Programar en lote
+
+En Tablero, Calendario y Semana, **Programar en lote** deja elegir varias piezas en Listo y
+asignarles redes, día y hora a la vez, con Deshacer. Solo guarda esos campos: la subida a las
+redes se hace desde la ficha de cada pieza, con Publicar o Programar.
 
 ### Video pesado
 
@@ -195,45 +202,37 @@ El layout es **responsive**: escritorio (sidebar + 8 vistas) por defecto y
 
 ```
 src/
-  styles/        tokens.css (design system) + global.css (reset, animaciones)
+  styles/        tem/ (copia del Sistema TEM v2: tokens, interfaz, fuentes) + app.css (composición)
   types.ts       tipos del dominio (Proposal, Stage, Script, CheckItem, Results)
-  data/mock.ts   piezas de ejemplo en cada etapa, biblioteca, temas, variantes
+  data/mock.ts   piezas del modo demostración, handle y estilos de la pieza
   lib/
     stages.ts    orden de etapas, nombres, requisitos (missingFor), resúmenes, plantillas
     ai.ts        webhooks + ask() + encargos por etapa (con ejemplos en modo demo)
     db.ts        Supabase: mapeo fila ⇄ Proposal, updateProposalFields
     dates.ts     fechas normalizadas a mediodía (evita saltos DST)
-    metrics.ts   serie determinística de alcance + agregación en cliente
+    metrics.ts   métricas reales: última foto por publicación, por pieza y por red
+    pieza.ts     medidas de la pieza del sistema v2 (vista previa y PNG)
     platforms.ts nombres de plataforma (PLATFORM_LABEL: nunca "IG" ni "in" a la vista)
-    exportCard.ts PNG 9:16 / miniatura 16:9
+    exportCard.ts PNG 9:16 / 4:5 / miniatura 16:9
   store.tsx      estado global + acciones (setStage, updateFields, finishRecording, run*)
   components/
     PieceCard      la tarjeta única de pieza (tablero, calendario, ideas, móvil)
     Teleprompter   texto grande, auto-scroll, pantalla completa
     RecordSession  sesión de grabación (escritorio y móvil)
     stages/        ui.tsx (campos que se guardan solos, casillas), panels.tsx (6 paneles),
-                   StageFlow.tsx (cabecera, acordeón, barra "Pasar a →")
-    Card916, CalendarPopover, Toast
-  desktop/       Sidebar, DesktopApp, Tablero, Ideas, Calendar, Copilot (ficha),
-                 Library, Metrics, Newsletter, Profile
-  mobile/        MobileApp, MobileHome, MobileWeek, MobileMetrics,
-                 MobileProfile, EditSheet (ficha)
+                   StageFlow.tsx (cabecera, acordeón, barra para avanzar)
+    LoteSheet      redes, día y hora para varias piezas en Listo
+    Card916, Connections, FormatGuide, Toast
+  views/         Metrics, Profile (las mismas en escritorio y teléfono)
+  desktop/       DesktopApp, Tablero, Ideas, Calendar, Copilot (ficha), Library
+  mobile/        MobileApp, MobileHome, MobileWeek, EditSheet (ficha)
 ```
 
-## Design tokens (resumen)
+## Diseño
 
-| Token | Valor | Uso |
-|---|---|---|
-| `--tem-bg` | `#EFEFEF` | canvas |
-| `--tem-surface` | `#FFFFFF` | tarjetas/paneles |
-| `--tem-ink` | `#111111` | texto principal / piezas programadas |
-| `--tem-orange` | `#F47C3C` | acento único |
-| `--tem-navy` | `#1D3557` | variante card |
-| `--tem-handle` | `#9A9A9A` | único gris (metadatos) |
-
-Dos tipografías con roles estrictos: **SF (system)** para la UI de la app,
-**Montserrat 800–900** solo dentro de los cards 9:16. Regla dura: nunca gris para
-texto de cuerpo; sobre claro `#111`, sobre oscuro `#FFF`.
+Sistema TEM v2 (`Marca/Sistema_v2/SISTEMA.md`). Inter 400 y 500, 600 solo en la cifra clave;
+Montserrat solo en el nombre del producto; botón negro por defecto; naranja una vez por
+pantalla; navegación activa en tinta. Modo oscuro según el sistema; las piezas no cambian.
 
 ## Pendiente (próximas fases)
 

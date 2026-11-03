@@ -72,6 +72,20 @@ Memoria de errores y decisiones no obvias, para que quien siga no vuelva a caer.
   JSON): menos llamadas y una sola validación. La idea queda en un ref (`pendingIdea`) hasta
   que se toca "Crear idea a partir de esto".
 
+## Sistema v2 (3-nov-2026)
+
+- **`src/styles/tem/` es copia de `Marca/Sistema_v2`.** No se edita aquí: un valor que falta se
+  agrega primero allá y se vuelve a copiar. La composición de pantallas vive en `styles/app.css`.
+- **La grilla de la ficha necesita `grid-template-rows: minmax(0, 1fr)`.** Con la fila implícita
+  (`auto`) crece con el contenido y la barra de avance queda bajo el borde de la pantalla.
+- **Una pieza no sigue el tema.** `Card916` y `exportCard` usan colores fijos; la interfaz sí
+  cambia con el modo oscuro. Las medidas de ambas salen de `lib/pieza.ts`.
+- **El formato de una pieza sin guion es su `type`.** Usar `pieceFormat(p)`, nunca
+  `p.script?.format` directo: si no, una Historia o un Carrusel en Idea caen en la guía de Reel.
+- **Historia:** una sola frase vale (`body` vacío) y no lleva modo de edición.
+- **Sin datos de ejemplo con Supabase configurado.** Si fallan las piezas, se avisa con
+  Reintentar. `data/mock.ts` solo corre sin `.env`.
+
 ## Entorno
 
 - **El sandbox no deja abrir puertos**: `vite` falla con `EPERM`. Hay que levantarlo fuera del
