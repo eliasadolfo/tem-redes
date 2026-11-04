@@ -100,11 +100,20 @@ body como `text/plain` con `{ token, action, … }`:
 
 ### Métricas
 
-La pantalla lee `tem_metrics` (`select *`, tolera columnas nuevas): se queda con la foto más
-reciente de cada publicación y agrupa por pieza (`proposal_id`, o la publicación si no está
-ligada) y por red. Orden: guardados + compartidos por 1.000 de alcance; lo que tiene menos de
-100 de alcance va al final porque su tasa no dice mucho. Sin datos, estado vacío: la app no
-inventa ni estima nada. Lo descartado (`status = rejected`) no aparece.
+Los datos son reales y vienen de `tem_metrics`, que guarda una foto por publicación y día.
+Por eso nunca se suman filas: se toma la última captura de cada publicación (plataforma +
+`external_id`), y se conservan de capturas anteriores el nombre y si fue de prueba. El rango
+filtra por `published_at`, por defecto los últimos 30 días. La gráfica muestra vistas, alcance y
+guardados + compartidos por día de publicación (semana o mes en rangos largos); un día sin
+publicaciones no lleva barra y una red que no entrega un dato muestra una raya, no un cero.
+
+### Formato de grabación
+
+Ideas pide vertical u horizontal y ofrece los formatos de `RECORD_FORMATS` (`lib/formatos.ts`),
+sacados de MODOS_EDICION, REGLAS_EDICION y PLAN_FORMATOS, con uno sugerido según el tema. La
+clave se guarda en la columna `format`, sin migración; `type` y `script.format` llevan el formato
+de la pieza. Al salir de Idea se conserva el sugerido si no se tocó, y el bloque Cómo grabarlo
+aparece en la etapa Grabar.
 
 ### Programar en lote
 

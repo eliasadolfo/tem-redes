@@ -145,7 +145,7 @@ export const RECORD_FORMATS: RecordFormat[] = [
     key: "dividida", name: "Pantalla dividida", orientation: "horizontal", script: "Reel", mode: "B",
     stand: "Centrado, un poco más lejos, con aire arriba y a los lados.",
     tips: ["Graba en horizontal 4K: de ahí salen los cortes verticales.", "Si grabas vertical centrado, la división te corta la cara.", "Graba tu pantalla aparte."],
-    frame: [{ name: "Prueba arriba al editar", y: [4, 24], x: [34, 66], style: "Arriba entra la captura real" }, TU_H],
+    frame: [{ name: "Aire", y: [4, 24], x: [34, 66], style: "Aquí entra la prueba al editar" }, TU_H],
   },
   {
     key: "pantalla", name: "Pasos en pantalla", orientation: "horizontal", script: "Reel", mode: "B",

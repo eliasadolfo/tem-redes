@@ -235,6 +235,10 @@ a { color: inherit; }
 .como-grabar { display: flex; gap: var(--tem-s-4); align-items: flex-start; min-width: 0; }
 .como-grabar__texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--tem-s-2); font-size: var(--tem-ui-small); line-height: 1.45; }
 .como-grabar__texto ul { font-size: var(--tem-ui-small); }
+.pieza .formato__fila { grid-template-columns: minmax(0, 1fr); }
+.pieza .segmento { display: flex; }
+.pieza .segmento button { flex: 1; justify-content: center; }
+.pieza .como-grabar { flex-wrap: wrap; }
 .idea-formato summary { cursor: pointer; font-size: var(--tem-ui-small); color: var(--tem-ink-2); }
 .idea-formato[open] summary { margin-bottom: var(--tem-s-3); }
 

@@ -47,10 +47,12 @@ interface PickerProps {
   suggestion: { format: RecordFormat; why: string };
   theme: IdeaTheme;
   onPick: (r: RecordFormat) => void;
+  /** En las tarjetas de idea el bloque va plegado, para no alargar la lista. */
+  foldHow?: boolean;
 }
 
 /** Vertical u horizontal, sus formatos con la sugerencia marcada y cómo grabarlo. */
-export default function FormatPicker({ orientation, onOrientation, record, suggestion, theme, onPick }: PickerProps) {
+export default function FormatPicker({ orientation, onOrientation, record, suggestion, theme, onPick, foldHow = false }: PickerProps) {
   const options = formatsFor(orientation);
   return (
     <div className="formato">
@@ -81,13 +83,20 @@ export default function FormatPicker({ orientation, onOrientation, record, sugge
         </div>
       </div>
       <p className="tem-help">{record.key === suggestion.format.key ? `Sugerido: ${suggestion.why}` : `Sugerido: ${suggestion.format.name}. ${suggestion.why}`}</p>
-      <HowToRecord record={record} theme={theme} />
+      {foldHow ? (
+        <details className="idea-formato">
+          <summary>Cómo grabarlo</summary>
+          <HowToRecord record={record} theme={theme} />
+        </details>
+      ) : (
+        <HowToRecord record={record} theme={theme} />
+      )}
     </div>
   );
 }
 
 /** El mismo selector sobre una pieza guardada: cada cambio se guarda solo. */
-export function PieceFormat({ p }: { p: Proposal }) {
+export function PieceFormat({ p, foldHow = false }: { p: Proposal; foldHow?: boolean }) {
   const { actions } = useStore();
   const [orientation, setOrientation] = useState<Orientation>(defaultOrientation(p));
   const title = pieceTitle(p);
@@ -98,8 +107,8 @@ export function PieceFormat({ p }: { p: Proposal }) {
 
   const change = (o: Orientation) => {
     setOrientation(o);
-    if (saved) actions.setRecordFormat(p.id, suggestFormat(theme, o, title).format);
+    actions.setRecordFormat(p.id, suggestFormat(theme, o, title).format);
   };
 
-  return <FormatPicker orientation={orientation} onOrientation={change} record={record} suggestion={suggestion} theme={theme} onPick={(r) => actions.setRecordFormat(p.id, r)} />;
+  return <FormatPicker orientation={orientation} onOrientation={change} record={record} suggestion={suggestion} theme={theme} onPick={(r) => actions.setRecordFormat(p.id, r)} foldHow={foldHow} />;
 }

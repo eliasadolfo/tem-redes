@@ -54,7 +54,7 @@ export default function Ideas() {
           </div>
           <button className="tem-btn tem-btn--primario" onClick={add} disabled={!line.trim()}>Anotar idea</button>
         </div>
-        <div className="seccion">
+        {line.trim() && <div className="seccion">
           <FormatPicker
             orientation={orientation}
             onOrientation={(o) => {
@@ -66,7 +66,7 @@ export default function Ideas() {
             theme={theme}
             onPick={(r) => setPicked(r.key)}
           />
-        </div>
+        </div>}
         <div className="tema-ia">
           <div className="tem-field">
             <label className="tem-label" htmlFor="tema">Tema de la semana</label>
@@ -91,10 +91,7 @@ export default function Ideas() {
         ) : (
           ideas.map((p) => (
             <PieceCard key={p.id} p={p}>
-              <details className="idea-formato">
-                <summary>Formato y cómo grabarlo</summary>
-                <PieceFormat p={p} />
-              </details>
+              <PieceFormat p={p} foldHow />
             </PieceCard>
           ))
         )}
