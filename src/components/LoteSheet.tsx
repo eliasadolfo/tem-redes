@@ -35,7 +35,8 @@ function buildPlan(p: Proposal, tags: PlatformTag[], when: string | null, connec
   const send = nets.filter((n) => !isDone(n));
   const off = send.filter((n) => !connections[n]);
   let problem: string | null = null;
-  if (!p.final_url) problem = "Falta el link del video final";
+  const soloThreads = nets.length > 0 && nets.every((n) => n === "Threads");
+  if (!p.final_url && !(soloThreads && p.caption.trim())) problem = "Falta el link del video final";
   else if (nets.length === 0) problem = "Sin redes";
   else if (send.length === 0) problem = "Ya programada en todas sus redes";
   else if (off.length) problem = `Conecta ${off.join(", ")} en Perfil`;

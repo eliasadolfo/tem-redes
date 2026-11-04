@@ -324,7 +324,8 @@ function PublishBlock({ p }: { p: Proposal }) {
   const notConnected = nets.filter((n) => !s.connections[n]);
   const busy = s.publishing === p.id;
   const slot = p.scheduled_at && new Date(p.scheduled_at).getTime() > Date.now() + 60_000 ? p.scheduled_at : null;
-  const missing = !p.final_url ? "Falta el link del video final, en Editar." : nets.length === 0 ? "Elige al menos una red." : notConnected.length ? `Conecta ${notConnected.join(", ")} en Perfil.` : null;
+  const soloThreads = nets.length > 0 && nets.every((n) => n === "Threads") && Boolean(p.caption.trim());
+  const missing = !p.final_url && !soloThreads ? "Falta el link del video final, en Editar." : nets.length === 0 ? "Elige al menos una red." : notConnected.length ? `Conecta ${notConnected.join(", ")} en Perfil.` : null;
   const canTrial = nets.includes("Instagram") && guideFor(pieceFormat(p)).key === "reel";
   const opts = canTrial && trial ? { trial: true } : undefined;
   return (
