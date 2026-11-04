@@ -63,8 +63,8 @@ export default function FormatGuide({ g }: { g: Guide }) {
 }
 
 /** Lienzo a escala con zonas seguras en gris y cada capa como un recuadro. */
-function Mock({ g, active, onPick }: { g: Guide; active: MockLayer | null; onPick: (l: MockLayer | null) => void }) {
-  const width = g.orientation === "horizontal" ? 300 : 180;
+export function Mock({ g, active = null, onPick, scale = 1 }: { g: Pick<Guide, "orientation" | "canvas" | "safe" | "layers" | "aspect">; active?: MockLayer | null; onPick?: (l: MockLayer | null) => void; scale?: number }) {
+  const width = Math.round((g.orientation === "horizontal" ? 300 : 180) * scale);
   const height = Math.round((width * g.canvas.h) / g.canvas.w);
   const pct = (px: number, total: number) => `${(px / total) * 100}%`;
   return (
@@ -80,7 +80,7 @@ function Mock({ g, active, onPick }: { g: Guide; active: MockLayer | null; onPic
           <button
             key={l.name}
             className={`maqueta__capa${full ? " maqueta__capa--fondo" : ""}`}
-            onClick={() => onPick(on ? null : l)}
+            onClick={() => onPick?.(on ? null : l)}
             aria-pressed={on}
             title={`${l.name}: ${l.style}`}
             style={{ left: `${l.x[0]}%`, top: `${l.y[0]}%`, width: `${l.x[1] - l.x[0]}%`, height: `${l.y[1] - l.y[0]}%` }}

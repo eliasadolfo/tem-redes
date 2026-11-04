@@ -52,6 +52,204 @@ export const EDIT_MODES: { key: EditMode; name: string; help: string }[] = [
   { key: "C", name: "Declaración", help: "Un solo plano, cero cortes. La frase completa de punta a punta." },
 ];
 
+/* -------------------------------------------------------------------------- */
+/*  Cómo se graba: los formatos que Elías eligió como referencia                */
+/* -------------------------------------------------------------------------- */
+
+export type Orientation = "vertical" | "horizontal";
+
+/**
+ * Tema de la idea, para sugerir formato y decidir qué se ve detrás
+ * (principio "contexto comunica": lo que se ve debe coincidir con el tema).
+ */
+export type IdeaTheme = "marca" | "sistemas" | "finanzas" | "historia" | "valores";
+
+/**
+ * Formato de grabación. Fuente: MODOS_EDICION §5, §8 y §13, REGLAS_EDICION §4 y §16,
+ * PLAN_FORMATOS. La pieza que sale usa la guía `script`: acá solo va lo que cambia.
+ * Quedaron fuera Clone y Reaction (pospuestos en el plan) y el vlog (descartado).
+ */
+export interface RecordFormat {
+  key: string;
+  name: string;
+  /** Cómo se sostiene la cámara. Puede diferir de la pieza: el dividido se graba horizontal y sale vertical. */
+  orientation: Orientation;
+  /** Formato de la pieza (`type` y `script.format`). */
+  script: string;
+  mode?: EditMode;
+  stand: string; // dónde te paras
+  tips: string[]; // 2 o 3 instrucciones
+  /** Encuadre al grabar, en % del cuadro. */
+  frame: MockLayer[];
+}
+
+const TU: MockLayer = { name: "Tú", y: [32, 92], x: [24, 76], style: "Pecho hacia arriba, con aire sobre la cabeza" };
+const TU_H: MockLayer = { name: "Tú", y: [24, 96], x: [34, 66], style: "Centrado, con aire arriba y a los lados" };
+
+export const RECORD_FORMATS: RecordFormat[] = [
+  {
+    key: "talking_head", name: "A cámara, una idea", orientation: "vertical", script: "Reel", mode: "C",
+    stand: "Sentado o de pie frente al lente, a 1 metro, centrado.",
+    tips: ["Un solo plano: no cortes para repetir.", "Di la idea en la primera frase.", "Sostén la mirada al lente hasta el final."],
+    frame: [TU],
+  },
+  {
+    key: "lista", name: "Lista de pasos", orientation: "vertical", script: "Reel", mode: "B",
+    stand: "Frente al lente, centrado, con aire sobre la cabeza para las tarjetas.",
+    tips: ["Un punto cada 8 a 10 segundos.", "Di el número en voz alta: «Primero», «Segundo».", "Cierra a cámara con el llamado a guardar."],
+    frame: [{ name: "Tarjeta", y: [8, 30], x: [12, 88], style: "Espacio para la tarjeta de cada paso" }, TU],
+  },
+  {
+    key: "prueba_detras", name: "Prueba detrás de ti", orientation: "vertical", script: "Reel", mode: "B",
+    stand: "Frente al lente, con la pared o el monitor libres detrás de ti.",
+    tips: ["Deja libre la mitad superior: ahí entra la captura o la cifra.", "Señala con la mano lo que aparece.", "Ten a mano la prueba real antes de grabar."],
+    frame: [{ name: "Prueba", y: [6, 46], x: [10, 90], style: "Captura, cifra o titular detrás tuyo" }, { ...TU, y: [46, 96] }],
+  },
+  {
+    key: "historia_contada", name: "Historia contada", orientation: "vertical", script: "Reel", mode: "A",
+    stand: "Sentado, cómodo, como si le contaras a un amigo.",
+    tips: ["Sin guion: cuéntalo de corrido, unos 60 segundos.", "Parte por el resultado, no por el inicio.", "Di las cifras exactas."],
+    frame: [TU],
+  },
+  {
+    key: "voz_broll", name: "Tu voz sobre imágenes", orientation: "vertical", script: "Reel", mode: "A",
+    stand: "No sales a cámara: grabas la voz cerca del micrófono.",
+    tips: ["Sirve para un día sin cámara.", "Reúne fotos o clips reales antes de grabar.", "Graba solo el audio, a menos de 40 cm."],
+    frame: [{ name: "Imagen", y: [0, 100], x: [0, 100], style: "Fotos o clips reales, sin ti en cámara" }],
+  },
+  {
+    key: "ranking", name: "Ranking", orientation: "vertical", script: "Reel", mode: "B",
+    stand: "Frente al lente, centrado, con aire sobre la cabeza.",
+    tips: ["Ordena de peor a mejor.", "Escribe los ejemplos reales antes de grabar.", "Deja el mejor para el final."],
+    frame: [{ name: "Tarjeta", y: [8, 30], x: [12, 88], style: "Espacio para el puesto del ranking" }, TU],
+  },
+  {
+    key: "historia_ig", name: "Historia de Instagram", orientation: "vertical", script: "Historia",
+    stand: "Selfie o plano fijo, donde estés.",
+    tips: ["Una sola idea en 10 segundos.", "Nada de texto arriba ni abajo: lo tapa la interfaz."],
+    frame: [{ ...TU, y: [20, 74] }],
+  },
+  {
+    key: "carrusel", name: "Carrusel con fotos reales", orientation: "vertical", script: "Carrusel",
+    stand: "No se graba: una foto real tuya por lámina.",
+    tips: ["Foto vertical con la cara fuera de la zona del texto.", "Una foto por momento que cuentas.", "Si falta una foto, se pide; no se rellena."],
+    frame: [{ name: "Foto", y: [0, 54], x: [0, 100], style: "Foto real, cara libre de texto" }, { name: "Tarjeta", y: [54, 92], x: [9, 91], style: "Espacio para el título" }],
+  },
+  {
+    key: "post", name: "Post de imagen", orientation: "vertical", script: "Post",
+    stand: "No se graba: una foto o una captura real.",
+    tips: ["Una sola idea, legible en 3 segundos.", "Cara en el tercio superior, aire abajo para el titular."],
+    frame: [{ name: "Foto", y: [0, 54], x: [0, 100], style: "Cara en el tercio superior" }, { name: "Titular", y: [58, 90], x: [9, 91], style: "Aire para el titular" }],
+  },
+  {
+    key: "dividida", name: "Pantalla dividida", orientation: "horizontal", script: "Reel", mode: "B",
+    stand: "Centrado, un poco más lejos, con aire arriba y a los lados.",
+    tips: ["Graba en horizontal 4K: de ahí salen los cortes verticales.", "Si grabas vertical centrado, la división te corta la cara.", "Graba tu pantalla aparte."],
+    frame: [{ name: "Prueba arriba al editar", y: [4, 24], x: [34, 66], style: "Arriba entra la captura real" }, TU_H],
+  },
+  {
+    key: "pantalla", name: "Pasos en pantalla", orientation: "horizontal", script: "Reel", mode: "B",
+    stand: "Frente al computador: se graba la pantalla con tu voz.",
+    tips: ["Narra lo que haces mientras lo haces.", "Cierra las ventanas con datos de clientes.", "Se usa la pantalla real, no gráficos."],
+    frame: [{ name: "Tu pantalla", y: [0, 100], x: [0, 100], style: "Grabación de pantalla real" }],
+  },
+  {
+    key: "video_largo", name: "Video largo de YouTube", orientation: "horizontal", script: "Video largo", mode: "B",
+    stand: "Sentado frente a la cámara, con el mismo fondo toda la sesión.",
+    tips: ["Di el título de cada capítulo en voz alta.", "Graba cara y pantalla por separado.", "Gancho con historia propia y cifras exactas."],
+    frame: [TU_H],
+  },
+  {
+    key: "manos", name: "Explicar a mano", orientation: "horizontal", script: "Video largo", mode: "A",
+    stand: "Sentado a la mesa: una cámara a ti y otra arriba, apuntando a tus manos.",
+    tips: ["Dibuja la idea en hoja o iPad mientras la explicas.", "Planos largos, casi sin texto.", "Soporte fijo sobre la mesa."],
+    frame: [{ name: "Tus manos", y: [20, 96], x: [18, 82], style: "Plano cenital de la mesa" }],
+  },
+];
+
+const byKey = (key: string) => RECORD_FORMATS.find((r) => r.key === key);
+
+/** Qué se ve detrás según el tema. Principio "contexto comunica". */
+export const THEME_BACKDROP: Record<IdeaTheme, string> = {
+  marca: "Documentos de registro o una solicitud sobre la mesa: que se vea el trámite real.",
+  sistemas: "Un monitor con el flujo encendido o tus sistemas en pantalla, sin datos de clientes.",
+  finanzas: "Libros del MBA, la pizarra y el tablero de 4 números.",
+  historia: "El lugar real de la historia o sus fotos. Si es Autana, las fotos de Autana.",
+  valores: "Tu oficina real, de noche, con la lámpara a la vista.",
+};
+
+/** Formato sugerido por tema y orientación, con su razón. */
+const SUGGESTED: Record<IdeaTheme, Record<Orientation, { key: string; why: string }>> = {
+  marca: {
+    vertical: { key: "talking_head", why: "En marcas manda tu criterio: tú a cámara y una idea." },
+    horizontal: { key: "dividida", why: "Permite mostrar el registro real arriba y a ti abajo." },
+  },
+  sistemas: {
+    vertical: { key: "prueba_detras", why: "La pantalla real es la prueba de que opera." },
+    horizontal: { key: "dividida", why: "Los sistemas se muestran funcionando: modo instructivo." },
+  },
+  finanzas: {
+    vertical: { key: "lista", why: "Se guarda más cuando se puede aplicar por pasos." },
+    horizontal: { key: "manos", why: "Los números se entienden mejor explicados a mano." },
+  },
+  historia: {
+    vertical: { key: "historia_contada", why: "Cuenta qué pasó y qué decidiste: construye confianza." },
+    horizontal: { key: "manos", why: "Para contarlo sin apuro y con planos largos." },
+  },
+  valores: {
+    vertical: { key: "talking_head", why: "Una convicción se sostiene en un solo plano." },
+    horizontal: { key: "video_largo", why: "Una idea de fondo que pide tiempo." },
+  },
+};
+
+/** Tema a partir de la etiqueta de la pieza o, si no hay, de las palabras del título. */
+export function themeOf(title: string, tema = ""): IdeaTheme {
+  const t = tema.toLowerCase();
+  if (t.includes("marca")) return "marca";
+  if (t.includes("cobro") || t.includes("finanza")) return "finanzas";
+  if (t.includes("atención") || t.includes("proceso") || t.includes("venta")) return "sistemas";
+  if (t.includes("personal")) return "historia";
+  if (t.includes("valor")) return "valores";
+  const x = title.toLowerCase();
+  if (/marca|logo|registr|copi[aó]|inapi/.test(x)) return "marca";
+  if (/n[uú]mero|caja|cobr|cuota|boleta|factura|margen|liquidaci|precio|cfo/.test(x)) return "finanzas";
+  if (/automat|bot|app|sistema|asistente|flujo|radar|certificado|n8n/.test(x)) return "sistemas";
+  if (/quebr|cerr[eé]|mi (local|historia|error)|aprend[ií]|autana/.test(x)) return "historia";
+  return "valores";
+}
+
+/** El tipo de pieza manda cuando ya está decidido: un carrusel no se sugiere como reel. */
+const BY_TYPE: Record<string, string> = { Historia: "historia_ig", Carrusel: "carrusel", Post: "post", "Video largo": "video_largo" };
+
+export function suggestFormat(theme: IdeaTheme, orientation: Orientation, title = "", type = ""): { format: RecordFormat; why: string } {
+  const byType = byKey(BY_TYPE[type] ?? "");
+  if (byType && byType.orientation === orientation) return { format: byType, why: `La idea ya es ${type.toLowerCase()}.` };
+  // "3 señales", "4 números": una lista se guarda y se aplica.
+  if (orientation === "vertical" && /\b(\d|dos|tres|cuatro|cinco)\b.*(señales|pasos|errores|cosas|n[uú]meros|formas|claves)/i.test(title)) {
+    return { format: byKey("lista") as RecordFormat, why: "El título ya es una lista: se guarda y se aplica." };
+  }
+  const s = SUGGESTED[theme][orientation];
+  return { format: byKey(s.key) as RecordFormat, why: s.why };
+}
+
+export const formatsFor = (o: Orientation) => RECORD_FORMATS.filter((r) => r.orientation === o);
+
+/** Formato de grabación guardado en la pieza (columna `format`). */
+export function recordFormatOf(p: { format?: string }): RecordFormat | null {
+  return byKey(p.format ?? "") ?? null;
+}
+
+/** Orientación de partida de una pieza que aún no elige formato. */
+export function defaultOrientation(p: { type: string; format?: string }): Orientation {
+  return recordFormatOf(p)?.orientation ?? (/largo|video$/i.test(p.type) ? "horizontal" : "vertical");
+}
+
+/** Formato de grabación de la pieza, o el sugerido si todavía no elige. */
+export function resolveFormat(p: { type: string; format?: string; eyebrow: string; line: { pre: string; key: string; post: string } }): RecordFormat {
+  const title = p.line.pre + p.line.key + p.line.post;
+  return recordFormatOf(p) ?? suggestFormat(themeOf(title, p.eyebrow), defaultOrientation(p), title, p.type).format;
+}
+
 /** Reglas que valen para todos los formatos (se muestran plegadas). */
 export const GENERAL_RULES = [
   "Elías graba, el sistema edita: los originales llegan por AirDrop al Mac. Telegram y WhatsApp recomprimen y topan en 20 MB.",

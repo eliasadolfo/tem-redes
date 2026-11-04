@@ -42,13 +42,31 @@ export function fmtDayMonth(d: Date): string {
   return `${d.getDate()} ${M_ABBR[d.getMonth()]}`;
 }
 
-/** "20 – 26 jul 2026" para el rango de la semana visible. */
-export function weekRangeLabel(mondayMs: number): string {
-  const start = new Date(mondayMs);
-  const end = new Date(mondayMs + 6 * DAY);
-  const sameMonth = start.getMonth() === end.getMonth();
-  const startStr = sameMonth ? String(start.getDate()) : fmtDayMonth(start);
-  return `${startStr} – ${end.getDate()} ${M_ABBR[end.getMonth()]} ${end.getFullYear()}`;
+export interface RangePreset {
+  label: string;
+  range: () => [number, number];
+}
+
+/** Atajo: los últimos N días, terminando hoy. */
+export function lastDays(n: number): RangePreset {
+  return {
+    label: `${n} días`,
+    range: () => {
+      const today = noon(Date.now());
+      return [noon(today - (n - 1) * DAY), today];
+    },
+  };
+}
+
+/** Atajo: los próximos N días, partiendo hoy. */
+export function nextDays(n: number): RangePreset {
+  return {
+    label: `${n} días`,
+    range: () => {
+      const today = noon(Date.now());
+      return [today, noon(today + (n - 1) * DAY)];
+    },
+  };
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -66,6 +84,18 @@ export function fromInputs(date: string, time: string, addDays = 0): string | nu
   const h = /^(\d{1,2}):(\d{2})/.exec(time);
   if (!m || !h) return null;
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + addDays, Number(h[1]), Number(h[2])).toISOString();
+}
+
+/** "5 oct 2026" */
+export function fmtDate(ms: number): string {
+  const d = new Date(ms);
+  return `${d.getDate()} ${M_ABBR[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+/** "3 nov 2026, 19:34" */
+export function fmtDateTime(iso: string): string {
+  const d = new Date(iso);
+  return `${fmtDate(d.getTime())}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 /** "mié 5 nov, 18:30" */

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useStore } from "../store";
 import PieceCard from "../components/PieceCard";
+import FormatPicker from "../components/FormatPicker";
+import { formatsFor, suggestFormat, themeOf, type Orientation } from "../lib/formatos";
 import { STAGES, STAGE_LABEL, parseLine, pieceWhen } from "../lib/stages";
 import { noon } from "../lib/dates";
 import type { Proposal, Stage } from "../types";
@@ -10,6 +12,8 @@ export default function MobileHome() {
   const { proposals, generating, loading, loadError, actions } = useStore();
   const [line, setLine] = useState("");
   const [tema, setTema] = useState("");
+  const [orientation, setOrientation] = useState<Orientation>("vertical");
+  const [picked, setPicked] = useState<string | null>(null);
   const active = proposals.filter((p) => p.status !== "rejected");
   const count = (st: Stage) => active.filter((p) => p.stage === st).length;
 
@@ -22,13 +26,20 @@ export default function MobileHome() {
     { title: "Sale hoy", items: active.filter((p) => p.stage === "listo" && isToday(p)) },
     { title: "Por editar", items: active.filter((p) => p.stage === "editar") },
     { title: "Por grabar", items: active.filter((p) => p.stage === "grabar") },
+    { title: "Ideas", items: active.filter((p) => p.stage === "idea") },
   ].filter((g) => g.items.length > 0);
+
+  const title = line.replace(/\*/g, "");
+  const theme = themeOf(title);
+  const suggestion = suggestFormat(theme, orientation, title);
+  const record = formatsFor(orientation).find((f) => f.key === picked) ?? suggestion.format;
 
   const addIdea = () => {
     const clean = line.trim();
     if (!clean) return;
-    const idea = actions.addIdea({ line: parseLine(clean) });
+    const idea = actions.addIdea({ line: parseLine(clean), record });
     setLine("");
+    setPicked(null);
     actions.flash("Idea anotada", () => actions.reject(idea.id));
   };
 
@@ -57,6 +68,19 @@ export default function MobileHome() {
           </div>
           <button className="tem-btn tem-btn--primario" onClick={addIdea} disabled={!line.trim()}>Anotar</button>
         </div>
+        {line.trim() && (
+          <FormatPicker
+            orientation={orientation}
+            onOrientation={(o) => {
+              setOrientation(o);
+              setPicked(null);
+            }}
+            record={record}
+            suggestion={suggestion}
+            theme={theme}
+            onPick={(r) => setPicked(r.key)}
+          />
+        )}
         <div className="tema-ia">
           <div className="tem-field">
             <label className="tem-label" htmlFor="tema-movil">Tema de la semana</label>

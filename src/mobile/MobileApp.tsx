@@ -4,7 +4,7 @@ import { useStore } from "../store";
 import type { MobileTab } from "../types";
 import EditSheet from "./EditSheet";
 import MobileHome from "./MobileHome";
-import MobileWeek from "./MobileWeek";
+import Calendar from "../views/Calendar";
 import Metrics from "../views/Metrics";
 import Profile from "../views/Profile";
 import RecordSession from "../components/RecordSession";
@@ -12,8 +12,8 @@ import { LoadError } from "../desktop/DesktopApp";
 
 const TABS: { key: MobileTab; label: string; icon: ComponentType<{ size?: number; strokeWidth?: number }> }[] = [
   { key: "inicio", label: "Inicio", icon: Home },
-  { key: "grabar", label: "Grabar", icon: Video },
-  { key: "semana", label: "Semana", icon: CalendarDays },
+  { key: "grabar", label: "Teleprompter", icon: Video },
+  { key: "semana", label: "Calendario", icon: CalendarDays },
   { key: "metricas", label: "Métricas", icon: BarChart3 },
 ];
 
@@ -38,7 +38,7 @@ export default function MobileApp() {
         {loadError && <LoadError />}
         {tab === "inicio" && <MobileHome />}
         {tab === "grabar" && <RecordSession mobile />}
-        {tab === "semana" && <MobileWeek />}
+        {tab === "semana" && <Calendar />}
         {tab === "metricas" && <Metrics />}
         {tab === "perfil" && <Profile />}
       </div>

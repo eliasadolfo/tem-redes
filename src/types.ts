@@ -72,7 +72,7 @@ export interface Proposal {
   scheduled_at?: string; // fecha y hora completas (ISO)
   platforms: PlatformTag[];
   type: string; // Reel, Short, Video, Newsletter, Post...
-  format?: "video" | "vertical";
+  format?: string; // formato de grabación (RECORD_FORMATS); "video" y "vertical" en piezas antiguas
   duration?: string; // "8:24" para YouTube
   eyebrow: string;
   line: HeadlineLine;

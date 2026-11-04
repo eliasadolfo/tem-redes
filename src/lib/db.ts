@@ -68,7 +68,7 @@ function rowToProposal(r: ProposalRow): Proposal {
     scheduled_at: r.scheduled_at ?? undefined,
     platforms: r.platforms as PlatformTag[],
     type: r.type,
-    format: (r.format as Proposal["format"]) ?? undefined,
+    format: r.format ?? undefined,
     duration: r.duration ?? undefined,
     eyebrow: r.eyebrow,
     line: { pre: r.line_pre, key: r.line_key, post: r.line_post },
@@ -167,12 +167,22 @@ export async function fetchConnections(): Promise<Record<string, ConnectionDetai
 /** Filas crudas de `tem_metrics`, lo más reciente primero. `null` = no se pudo leer. */
 export async function fetchMetrics(): Promise<Record<string, unknown>[] | null> {
   if (!supabase) return [];
-  const { data, error } = await supabase.from("tem_metrics").select("*").order("captured_at", { ascending: false });
-  if (error) {
-    console.error("fetchMetrics:", error.message);
-    return null;
+  // Hay una fila por publicación y día: se lee por páginas para no cortar en el tope de 1.000.
+  const rows: Record<string, unknown>[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase
+      .from("tem_metrics")
+      .select("*")
+      .order("captured_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range(from, from + 999);
+    if (error) {
+      console.error("fetchMetrics:", error.message);
+      return null;
+    }
+    rows.push(...(data as Record<string, unknown>[]));
+    if (data.length < 1000) return rows;
   }
-  return data as Record<string, unknown>[];
 }
 
 /** Actualiza el estado de una propuesta (aprobar / descartar / programar). */
@@ -183,7 +193,7 @@ export async function updateProposalStatus(id: string, status: ProposalStatus): 
 }
 
 type EditableKey =
-  | "eyebrow" | "line" | "caption" | "tags" | "day" | "time" | "scheduled_at" | "status" | "stage" | "source" | "script"
+  | "eyebrow" | "line" | "caption" | "tags" | "type" | "format" | "day" | "time" | "scheduled_at" | "status" | "stage" | "source" | "script"
   | "shots" | "checklist" | "raw_url" | "edit_mode" | "delivery" | "final_url" | "thumbnail_url" | "notes" | "recorded_at"
   | "published_at" | "results" | "platforms" | "posts";
 
@@ -195,7 +205,7 @@ export type ProposalFields = { [K in EditableKey]?: Proposal[K] | null };
 
 /** Columnas que se copian tal cual (undefined = no tocar; el resto se guarda, null incluido). */
 const PLAIN_COLUMNS = [
-  "eyebrow", "caption", "tags", "day", "time", "scheduled_at", "status", "stage", "source", "script", "shots",
+  "eyebrow", "caption", "tags", "type", "format", "day", "time", "scheduled_at", "status", "stage", "source", "script", "shots",
   "checklist", "raw_url", "edit_mode", "delivery", "final_url", "thumbnail_url", "notes", "recorded_at", "published_at",
   "results", "platforms", "posts",
 ] as const;

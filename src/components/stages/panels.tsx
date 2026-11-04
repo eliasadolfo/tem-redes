@@ -15,8 +15,9 @@ import {
   pieceWhen,
   scheduleFields,
 } from "../../lib/stages";
-import { EDIT_MODES, checklistFor, deliveryFor, guideFor, pieceFormat, suggestedFileName } from "../../lib/formatos";
+import { EDIT_MODES, checklistFor, deliveryFor, guideFor, pieceFormat, recordFormatOf, suggestedFileName, themeOf } from "../../lib/formatos";
 import FormatGuide from "../FormatGuide";
+import { HowToRecord, PieceFormat } from "../FormatPicker";
 import { TAG_TO_NETWORK, hasPublishing } from "../../lib/publish";
 import type { CheckItem, Network, PlatformTag, PostResult, Proposal, Results, Script } from "../../types";
 import { CheckRow, Field, TextArea, TextInput } from "./ui";
@@ -43,6 +44,9 @@ export function IdeaPanel({ p }: { p: Proposal }) {
         <Field label="Tema">
           <TextInput value={p.eyebrow} onCommit={(v) => actions.updateFields(p.id, { eyebrow: v })} ariaLabel="Tema de la pieza" />
         </Field>
+      </div>
+      <div className="grupo">
+        <PieceFormat p={p} />
       </div>
     </div>
   );
@@ -138,6 +142,7 @@ export function GrabarPanel({ p, onTeleprompter }: { p: Proposal; onTeleprompter
   const { actions } = useStore();
   const format = pieceFormat(p);
   const g = guideFor(format);
+  const record = recordFormatOf(p);
   const checklist = p.checklist?.length ? p.checklist : checklistFor(format);
   const setChecklist = (next: CheckItem[]) => actions.updateFields(p.id, { checklist: next });
   const shots = p.shots ?? [];
@@ -152,6 +157,12 @@ export function GrabarPanel({ p, onTeleprompter }: { p: Proposal; onTeleprompter
 
   return (
     <div className="panel">
+      {record && (
+        <div className="pila pila--chica">
+          <div className="grupo__cabeza">Formato: {record.name}<span>{record.orientation === "horizontal" ? "Se graba horizontal" : "Se graba vertical"}</span></div>
+          <HowToRecord record={record} theme={themeOf(title, p.eyebrow)} />
+        </div>
+      )}
       <details className="guia__pliegue">
         <summary>Hoja de rodaje: {g.name}</summary>
         <FormatGuide g={g} />

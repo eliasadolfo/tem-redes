@@ -47,7 +47,7 @@ export default function RecordSession({ mobile = false }: { mobile?: boolean }) 
     <div className="pagina pagina--angosta">
       <div className="cabecera">
         <div className="cabecera__texto">
-          <h1 className="tem-h1">Grabar</h1>
+          <h1 className="tem-h1">Teleprompter</h1>
           <p className="tem-caption">
             {items.length === 0 ? "Nada por grabar." : items.length === 1 ? "1 pieza por grabar." : `${items.length} piezas por grabar.`} Abre el teleprompter, marca las tomas y toca Grabada al terminar.
           </p>

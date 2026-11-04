@@ -1,7 +1,9 @@
 import { useState, type KeyboardEvent } from "react";
 import { useStore } from "../store";
 import PieceCard from "../components/PieceCard";
+import FormatPicker, { PieceFormat } from "../components/FormatPicker";
 import { parseLine } from "../lib/stages";
+import { formatsFor, suggestFormat, themeOf, type Orientation, type RecordFormat } from "../lib/formatos";
 
 /** Ideas: entrada rápida (una línea + de dónde salió) y generación con el tema de la semana. */
 export default function Ideas() {
@@ -10,13 +12,21 @@ export default function Ideas() {
   const [line, setLine] = useState("");
   const [source, setSource] = useState("");
   const [tema, setTema] = useState("");
+  const [orientation, setOrientation] = useState<Orientation>("vertical");
+  const [picked, setPicked] = useState<string | null>(null); // null = sigue la sugerencia
+
+  const title = line.replace(/\*/g, "");
+  const theme = themeOf(title);
+  const suggestion = suggestFormat(theme, orientation, title);
+  const record: RecordFormat = formatsFor(orientation).find((f) => f.key === picked) ?? suggestion.format;
 
   const add = () => {
     const clean = line.trim();
     if (!clean) return;
-    const idea = actions.addIdea({ line: parseLine(clean), source: source.trim() });
+    const idea = actions.addIdea({ line: parseLine(clean), source: source.trim(), record });
     setLine("");
     setSource("");
+    setPicked(null);
     actions.flash("Idea anotada", () => actions.reject(idea.id));
   };
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -44,6 +54,19 @@ export default function Ideas() {
           </div>
           <button className="tem-btn tem-btn--primario" onClick={add} disabled={!line.trim()}>Anotar idea</button>
         </div>
+        <div className="seccion">
+          <FormatPicker
+            orientation={orientation}
+            onOrientation={(o) => {
+              setOrientation(o);
+              setPicked(null);
+            }}
+            record={record}
+            suggestion={suggestion}
+            theme={theme}
+            onPick={(r) => setPicked(r.key)}
+          />
+        </div>
         <div className="tema-ia">
           <div className="tem-field">
             <label className="tem-label" htmlFor="tema">Tema de la semana</label>
@@ -66,7 +89,14 @@ export default function Ideas() {
             <p>Anota lo que dijiste hoy, un caso o un dato, o pide ideas con el tema de la semana.</p>
           </div>
         ) : (
-          ideas.map((p) => <PieceCard key={p.id} p={p} />)
+          ideas.map((p) => (
+            <PieceCard key={p.id} p={p}>
+              <details className="idea-formato">
+                <summary>Formato y cómo grabarlo</summary>
+                <PieceFormat p={p} />
+              </details>
+            </PieceCard>
+          ))
         )}
       </div>
     </div>

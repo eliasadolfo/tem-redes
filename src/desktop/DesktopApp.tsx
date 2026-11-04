@@ -2,7 +2,7 @@ import type { MouseEvent } from "react";
 import { useStore } from "../store";
 import Tablero from "./Tablero";
 import Ideas from "./Ideas";
-import Calendar from "./Calendar";
+import Calendar from "../views/Calendar";
 import Copilot from "./Copilot";
 import Library from "./Library";
 import Metrics from "../views/Metrics";
@@ -13,7 +13,7 @@ import type { DesktopView } from "../types";
 const NAV: { key: DesktopView; label: string }[] = [
   { key: "tablero", label: "Tablero" },
   { key: "ideas", label: "Ideas" },
-  { key: "grabar", label: "Grabar" },
+  { key: "grabar", label: "Teleprompter" },
   { key: "calendar", label: "Calendario" },
   { key: "library", label: "Biblioteca" },
   { key: "metrics", label: "Métricas" },

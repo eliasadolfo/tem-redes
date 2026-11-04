@@ -22,7 +22,7 @@ import type {
   Proposal,
   Stage,
 } from "./types";
-import { DAY, mondayOf } from "./lib/dates";
+import { DAY, mondayOf, noon } from "./lib/dates";
 import { INITIAL_PROPOSALS } from "./data/mock";
 import {
   fetchConnections,
@@ -49,6 +49,7 @@ import {
 import { hasSupabase } from "./lib/supabase";
 import { toMetricRow, type MetricRow } from "./lib/metrics";
 import { NETWORK_KEY, TAG_TO_NETWORK, fetchConnectionStatus, hasPublishing, publishPiece as publishViaRobot, startConnect } from "./lib/publish";
+import { recordFormatOf, resolveFormat, type RecordFormat } from "./lib/formatos";
 import { STAGE_LABEL, missingFor, newItem, scheduleFields, statusForStage } from "./lib/stages";
 
 /** H09 — el error dice qué pasó y cómo seguir, sin códigos técnicos. */
@@ -77,11 +78,14 @@ interface State {
   connChecking: boolean; // "Revisar conexiones" en curso
   publishing: string | null; // id de la pieza que se está publicando
   // calendario
-  calWeekStart: number;
+  calStart: number;
+  calEnd: number;
   // métricas (reales, de tem_metrics)
   metrics: MetricRow[];
   metricsState: "cargando" | "listo" | "error";
   metricNet: MetricNet;
+  metricStart: number;
+  metricEnd: number;
   // biblioteca
   libFilter: PlatformTag | "Todas";
   // feedback
@@ -119,10 +123,13 @@ const initialState: State = {
   connDetails: {},
   connChecking: false,
   publishing: null,
-  calWeekStart: mondayOf(Date.now()),
+  calStart: mondayOf(Date.now()),
+  calEnd: mondayOf(Date.now()) + 6 * DAY,
   metrics: [],
   metricsState: "cargando",
   metricNet: "Todas",
+  metricStart: noon(Date.now()) - 29 * DAY,
+  metricEnd: noon(Date.now()),
   libFilter: "Todas",
   toast: null,
   undo: null,
@@ -176,15 +183,17 @@ interface Actions {
   /** "Grabada ✓": marca todas las tomas, guarda el link del bruto y pasa a Editar (con Deshacer). */
   finishRecording: (id: string, rawUrl: string, editMode?: EditMode | null) => boolean;
   /** Crea una idea nueva (entrada rápida o a partir de un aprendizaje). */
-  addIdea: (idea: { line: HeadlineLine; why?: string; source?: string; eyebrow?: string }) => Proposal;
+  addIdea: (idea: { line: HeadlineLine; why?: string; source?: string; eyebrow?: string; record?: RecordFormat }) => Proposal;
+  /** Fija el formato de grabación de una pieza: tipo, formato del guion y modo de edición. */
+  setRecordFormat: (id: string, record: RecordFormat) => void;
   /** Guarda varias piezas nuevas ya armadas (p.ej. ideas generadas por la IA). */
   addProposals: (items: Proposal[]) => Promise<void>;
   flash: (text: string, undo?: (() => void) | null) => void;
   // calendario
-  calWeekNav: (delta: number) => void;
-  calToday: () => void;
+  setCalRange: (start: number, end: number) => void;
   // métricas
   setNet: (net: MetricNet) => void;
+  setMetricRange: (start: number, end: number) => void;
   loadMetrics: () => Promise<void>;
   // biblioteca
   setLib: (filter: PlatformTag | "Todas") => void;
@@ -281,14 +290,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       });
     };
 
-    const addIdea: Actions["addIdea"] = ({ line, why, source, eyebrow }) => {
+    /** Lo que se guarda al elegir un formato de grabación. */
+    const recordFields = (p: Proposal, record: RecordFormat): ProposalFields => ({
+      format: record.key,
+      type: record.script,
+      ...(record.mode ? { edit_mode: record.mode } : {}),
+      ...(p.script ? { script: { ...p.script, format: record.script } } : {}),
+    });
+
+    const addIdea: Actions["addIdea"] = ({ line, why, source, eyebrow, record }) => {
       const dow = new Date().getDay(); // 0 = domingo
       const idea: Proposal = {
         id: crypto.randomUUID(),
         day: dow >= 1 && dow <= 5 ? dow - 1 : 0,
         time: "",
-        platforms: ["IG"],
-        type: "Reel",
+        platforms: record?.script === "Video largo" ? ["YouTube"] : ["IG"],
+        type: record?.script ?? "Reel",
+        format: record?.key,
+        edit_mode: record?.mode,
         eyebrow: eyebrow ?? "",
         line,
         status: "proposal",
@@ -343,7 +362,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         recorded_at: p.recorded_at,
         published_at: p.published_at,
       };
-      const next: ProposalFields = { stage, status: statusForStage(stage) };
+      // Al salir de Idea se conserva el formato, aunque sea el sugerido sin tocar.
+      const leavingIdea = p.stage === "idea" && !recordFormatOf(p);
+      const formatFields = leavingIdea ? recordFields(p, resolveFormat(p)) : {};
+      if (leavingIdea) Object.assign(before, { format: p.format ?? null, type: p.type, edit_mode: p.edit_mode ?? null, script: p.script ?? null });
+      const next: ProposalFields = { ...formatFields, stage, status: statusForStage(stage) };
       if (stage === "editar" && !p.recorded_at) next.recorded_at = new Date().toISOString();
       if (stage === "publicado" && !p.published_at) next.published_at = new Date().toISOString();
       applyFields(id, next);
@@ -439,6 +462,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       openWork,
       closeWork: () => patch({ work: null }),
       setVariant: (variant) => patch({ variant }),
+      setRecordFormat: (id, record) => {
+        const p = sRef.current.proposals.find((x) => x.id === id);
+        if (p) applyFields(id, recordFields(p, record));
+      },
       togglePlatform: (id, tag) => {
         const p = sRef.current.proposals.find((x) => x.id === id);
         if (!p) return;
@@ -511,11 +538,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       },
       flash,
       // calendario
-      calWeekNav: (delta) =>
-        patch((prev) => ({ calWeekStart: prev.calWeekStart + delta * 7 * DAY })),
-      calToday: () => patch({ calWeekStart: mondayOf(Date.now()) }),
+      setCalRange: (calStart, calEnd) => patch({ calStart, calEnd }),
       // métricas
       setNet: (net) => patch({ metricNet: net }),
+      setMetricRange: (metricStart, metricEnd) => patch({ metricStart, metricEnd }),
       loadMetrics: async () => {
         patch({ metricsState: "cargando" });
         const raw = await fetchMetrics();
